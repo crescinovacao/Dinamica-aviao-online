@@ -4,29 +4,57 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dinâmica do Avião · Crescimentum</title>
-  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;700;800&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#210000">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23210000'/%3E%3Cpath d='M32 8c2 0 3.5 2 3.5 5v14l17 11v5l-17-5v12l5 4v4l-8.5-2-8.5 2v-4l5-4V38l-17 5v-5l17-11V13c0-3 1.5-5 3.5-5z' fill='%23fff'/%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
+    /* ═══════════════════════════════════════════════════════
+       DESIGN TOKENS (padrão de ferramentas Crescimentum)
+    ═══════════════════════════════════════════════════════ */
     :root {
-      --blue:   #007BEA;
-      --navy:   #001B71;
-      --red:    #210000;
-      --bg:     #F6F5F2;
-      --card:   #FFFFFF;
-      --text:   #1C1C1E;
-      --muted:  #6B7280;
-      --border: #E4E2DC;
-      --green:  #16A34A;
-      --warn:   #D97706;
-      --danger: #DC2626;
-      --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-      --radius: 10px;
+      --ink:         #210000;
+      --red:         #210000;            /* alias antigo: tinta escura */
+      --text:        #210000;
+      --navy:        #001B71;
+      --blue:        #007BEA;
+      --blue-strong: #0067C9;            /* fundo de botões e balões com texto branco (contraste AA) */
+      --blue-soft:   #B3DFFF;
+      --blue-tint:   #EAF4FF;
+      --bg:          #F5F7FA;
+      --card:        #FFFFFF;
+      --muted:       #5B6472;
+      --border:      #DDE3EC;
+      --border-strong: #C3CCD9;
+      --green:       #15803D;
+      --green-tint:  #E8F6EC;
+      --warn:        #B45309;
+      --warn-tint:   #FDF3E3;
+      --danger:      #B91C1C;
+      --danger-tint: #FDECEC;
+      --shadow:      0 1px 2px rgba(33,0,0,.06), 0 1px 3px rgba(33,0,0,.04);
+      --radius:      12px;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
-      font-family: 'Aptos','Segoe UI',system-ui,Arial,sans-serif;
-      background: var(--bg); color: var(--text);
+      font-family: 'Aptos','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+      background: var(--bg); color: var(--ink);
       min-height: 100vh; font-size: 15px; line-height: 1.55;
     }
+    h1, h2, h3 { font-family: 'Raleway', sans-serif; font-weight: 800; color: var(--ink); line-height: 1.2; }
+    button { font-family: inherit; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+    .muted { color: var(--muted); }
+    .small { font-size: 13px; }
+    [hidden] { display: none !important; }
+
+    /* Foco visível em tudo que é interativo */
+    :focus { outline: none; }
+    :focus-visible { outline: 3px solid var(--blue-soft); outline-offset: 1px; box-shadow: 0 0 0 1.5px var(--blue); }
+    input:focus-visible, select:focus-visible { box-shadow: none; outline: 3px solid var(--blue-soft); border-color: var(--blue); }
 
     /* ── Screens ── */
     .screen { display: none; }
@@ -34,256 +62,361 @@
 
     /* ── Header ── */
     .top-header {
-      background: var(--red); color: #fff;
-      padding: 13px 20px; display: flex; align-items: center; gap: 12px;
-      font-family: 'Raleway', sans-serif; font-weight: 800;
+      background: var(--ink); color: #fff;
+      padding: 0 20px; min-height: 56px; display: flex; align-items: center; gap: 14px;
       position: sticky; top: 0; z-index: 100;
-      border-bottom: 1px solid rgba(255,255,255,.08);
     }
-    .top-header .title { font-size: 16px; flex: 1; letter-spacing: -.2px; }
-    .top-header .hbadge {
-      background: rgba(255,255,255,.18); padding: 4px 12px;
-      border-radius: 6px; font-size: 11px; font-weight: 700;
-      letter-spacing: .5px; text-transform: uppercase; white-space: nowrap;
+    .brand { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+    .wordmark {
+      font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 17px;
+      letter-spacing: -.4px; color: #fff; white-space: nowrap;
     }
+    .brand-sep { width: 1px; height: 18px; background: rgba(255,255,255,.28); flex-shrink: 0; }
+    .top-header .title {
+      font-family: 'Raleway', sans-serif; font-weight: 700; font-size: 14px;
+      color: rgba(255,255,255,.88); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .hright { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .hbadge {
+      background: rgba(255,255,255,.16); color: #fff; padding: 5px 12px;
+      border-radius: 999px; font-family: 'Raleway', sans-serif; font-size: 12px; font-weight: 800;
+      letter-spacing: .3px; white-space: nowrap;
+    }
+    .timer-chip {
+      background: rgba(255,255,255,.12); border-radius: 999px; padding: 4px 14px;
+      line-height: 1.3;
+    }
+    .timer-chip .timer-big {
+      font-size: 17px; letter-spacing: 1px; color: #fff; text-align: left;
+      font-variant-numeric: tabular-nums;
+    }
+    .timer-chip .timer-big.warn { color: #FDBA74; }
+    .timer-chip .timer-big.end  { color: #FCA5A5; }
 
     /* ── Container ── */
-    .container { max-width: 680px; margin: 0 auto; padding: 16px 16px 40px; }
+    .container { max-width: 720px; margin: 0 auto; padding: 20px 16px 48px; }
+    .container-wide { max-width: 1100px; }
+    .container-form { max-width: 640px; }
 
     /* ── Card ── */
     .card {
       background: var(--card); border-radius: var(--radius);
-      padding: 20px; margin-bottom: 12px;
+      padding: 20px; margin-bottom: 14px;
       box-shadow: var(--shadow); border: 1px solid var(--border);
     }
     .card-title {
       font-family: 'Raleway', sans-serif; font-weight: 800;
-      font-size: 13px; color: var(--navy); margin-bottom: 14px;
-      text-transform: uppercase; letter-spacing: .5px;
-      display: flex; align-items: center; gap: 6px;
+      font-size: 16px; color: var(--navy); margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px; line-height: 1.25;
+    }
+    .card-title .count {
+      font-size: 12px; font-weight: 800; color: var(--muted);
+      background: var(--bg); border-radius: 999px; padding: 2px 9px;
     }
 
     /* ── Form ── */
-    .form-group { margin-bottom: 16px; }
-    label {
-      display: block; font-size: 13px; font-weight: 600;
-      color: var(--muted); margin-bottom: 6px;
+    .field { margin-bottom: 20px; }
+    .field-label, label.field-label {
+      display: block; font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 4px;
     }
+    .field-hint { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+    label { display: block; font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
     input[type=text], input[type=number], select {
-      width: 100%; padding: 10px 14px;
-      border: 1.5px solid var(--border); border-radius: 8px;
-      font-size: 15px; font-family: inherit;
-      background: #fff; outline: none;
-      transition: border-color .15s, box-shadow .15s; color: var(--text);
+      width: 100%; min-height: 46px; padding: 10px 14px;
+      border: 1.5px solid var(--border-strong); border-radius: 10px;
+      font-size: 16px; font-family: inherit;
+      background: #fff; transition: border-color .2s ease, box-shadow .2s ease; color: var(--ink);
     }
-    input:focus, select:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(0,123,234,.1);
+    input::placeholder { color: #667082; }
+    .seg { display: flex; flex-wrap: wrap; gap: 8px; }
+    .seg button {
+      min-width: 48px; min-height: 44px; padding: 8px 14px;
+      border: 1.5px solid var(--border-strong); border-radius: 10px;
+      background: #fff; color: var(--ink); cursor: pointer;
+      font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 15px;
+      transition: background .2s ease, border-color .2s ease, color .2s ease;
     }
+    .seg button:hover { border-color: var(--blue); }
+    .seg button[aria-checked="true"] {
+      background: var(--blue-strong); border-color: var(--blue-strong); color: #fff;
+    }
+    .summary {
+      background: var(--blue-tint); border-radius: 10px; padding: 12px 14px;
+      font-size: 14px; color: var(--navy); margin-bottom: 16px;
+    }
+    .inline-input { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .inline-input input { max-width: 110px; }
+    .inline-input span { font-size: 13px; color: var(--muted); }
 
     /* ── Buttons ── */
     .btn {
-      padding: 11px 22px; border: none; border-radius: 8px;
+      min-height: 44px; padding: 11px 22px; border: 1.5px solid transparent; border-radius: 10px;
       font-family: 'Raleway', sans-serif; font-weight: 800;
       font-size: 14px; cursor: pointer;
-      transition: opacity .15s, transform .08s, box-shadow .15s;
-      display: inline-flex; align-items: center; gap: 6px; line-height: 1;
+      transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .1s ease;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; line-height: 1.1;
     }
-    .btn:hover { opacity: .9; }
-    .btn:active { transform: scale(.97); }
-    .btn:disabled { opacity: .4; cursor: default; pointer-events: none; }
-    .btn-primary { background: var(--blue); color: #fff; }
-    .btn-primary:hover { box-shadow: 0 4px 12px rgba(0,123,234,.3); }
-    .btn-red { background: var(--red); color: #fff; }
-    .btn-red:hover { box-shadow: 0 4px 12px rgba(33,0,0,.35); }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; pointer-events: none; }
+    .btn-primary, .btn-red { background: var(--blue-strong); color: #fff; }
+    .btn-primary:hover, .btn-red:hover { background: #00539F; }
     .btn-green { background: var(--green); color: #fff; }
-    .btn-outline {
-      background: transparent; border: 1.5px solid var(--border);
-      color: var(--text);
-    }
-    .btn-outline:hover { border-color: #bbb; background: rgba(0,0,0,.02); }
-    .btn-danger { background: transparent; border: 1.5px solid var(--danger); color: var(--danger); }
-    .btn-sm { padding: 7px 14px; font-size: 12px; }
-    .btn-full { width: 100%; justify-content: center; }
+    .btn-green:hover { background: #116530; }
+    .btn-outline { background: #fff; border-color: var(--border-strong); color: var(--ink); }
+    .btn-outline:hover { border-color: var(--blue); color: var(--navy); }
+    .btn-danger { background: #fff; border-color: var(--danger); color: var(--danger); }
+    .btn-danger:hover { background: var(--danger-tint); }
+    .btn-solid-danger { background: var(--danger); color: #fff; }
+    .btn-solid-danger:hover { background: #991B1B; }
+    .btn-sm { min-height: 38px; padding: 7px 14px; font-size: 13px; }
+    .btn-full { width: 100%; }
     .mt-8  { margin-top: 8px; }
     .mt-12 { margin-top: 12px; }
     .row-btns { display: flex; gap: 10px; flex-wrap: wrap; }
 
-    /* ── Home ── */
-    .cover-pill { display: none; } /* removed — generic pattern */
-
-    .cover-wrap { padding: 44px 0 32px; }
-    .cover-title {
-      font-family: 'Raleway', sans-serif; font-weight: 800;
-      font-size: clamp(34px, 8vw, 52px);
-      color: var(--navy); margin-bottom: 10px; line-height: 1.1;
-      letter-spacing: -1px;
+    /* ── Chips e badges ── */
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px;
+      border-radius: 999px; font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 12px;
+      background: #EEF1F6; color: #3D4654; white-space: nowrap;
     }
-    .cover-sub {
-      font-size: clamp(14px, 3.5vw, 16px); color: var(--muted);
-      margin-bottom: 32px; line-height: 1.6; max-width: 400px;
-      margin-left: auto; margin-right: auto;
-    }
-    .cover-cta-wrap { max-width: 320px; margin: 0 auto 24px; }
-    .cover-divider {
-      border: none; height: 1px; background: var(--border); margin: 28px 0;
-    }
-    .cover-par-hint {
-      font-size: 13px; color: var(--muted); margin-top: 16px; line-height: 1.5;
-    }
-
-    /* How it works card — less aggressive */
-    .how-card {
-      background: #FEF9EE; border: 1px solid #F0D98D;
-      border-radius: var(--radius); padding: 20px;
-      margin-bottom: 12px;
-    }
-    .how-card .card-title { color: #7A5500; }
-    .how-card p { font-size: 14px; color: #6B4B00; line-height: 1.65; }
-
-    /* ── Role badge ── */
+    .chip::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .8; }
+    .chip-playing { background: var(--green-tint); color: var(--green); }
+    .chip-ended   { background: var(--warn-tint);  color: var(--warn); }
+    .chip-ok      { background: var(--green-tint); color: var(--green); }
+    .chip-err     { background: var(--danger-tint); color: var(--danger); }
+    .chip-info    { background: var(--blue-tint); color: var(--blue-strong); }
     .rbadge {
-      display: inline-block; padding: 2px 9px; border-radius: 5px;
-      font-size: 12px; font-weight: 700; font-family: 'Raleway', sans-serif;
+      display: inline-block; padding: 2px 9px; border-radius: 6px;
+      font-size: 12px; font-weight: 800; font-family: 'Raleway', sans-serif; white-space: nowrap;
     }
-    .rbadge-A  { background: #FEF3C7; color: #92400E; }
+    .rbadge-A  { background: #FEF3C7; color: #8A3D06; }
     .rbadge-B1 { background: #DBEAFE; color: #1D4ED8; }
     .rbadge-B2 { background: #E0E7FF; color: #3730A3; }
     .rbadge-C, .rbadge-D, .rbadge-E, .rbadge-F,
-    .rbadge-G, .rbadge-H, .rbadge-I, .rbadge-J { background: #F0FDF4; color: #166534; }
+    .rbadge-G, .rbadge-H, .rbadge-I, .rbadge-J { background: #E8F6EC; color: #14532D; }
 
-    /* ── Room code (facilitador — identificação discreta) ── */
-    .room-code {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-family: 'Raleway', sans-serif; font-weight: 800;
-      font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
-      color: var(--muted); background: var(--bg);
-      border: 1px solid var(--border); border-radius: 5px;
-      padding: 4px 10px;
+    /* ── Home ── */
+    .hero { text-align: center; padding: 40px 0 28px; }
+    .eyebrow {
+      display: inline-block; font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 12px;
+      letter-spacing: 1.2px; text-transform: uppercase; color: var(--blue-strong);
+      background: var(--blue-tint); padding: 5px 14px; border-radius: 999px; margin-bottom: 16px;
+    }
+    .hero h1 { font-size: clamp(32px, 7vw, 48px); color: var(--navy); letter-spacing: -1px; margin-bottom: 12px; }
+    .lead { font-size: clamp(15px, 3.6vw, 17px); color: var(--muted); max-width: 520px; margin: 0 auto; line-height: 1.6; }
+    .entry-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 8px; }
+    .entry-card { margin-bottom: 0; display: flex; flex-direction: column; gap: 10px; }
+    .entry-card .card-title { margin-bottom: 0; }
+    .entry-card p { font-size: 14px; }
+    .entry-card .btn { margin-top: auto; }
+    .code-row { display: flex; gap: 8px; margin-top: auto; }
+    .code-row input { text-transform: uppercase; text-align: center; letter-spacing: 4px; font-family: 'Raleway', sans-serif; font-weight: 800; }
+    .how { margin-top: 28px; }
+    .how > h2 { font-size: 16px; color: var(--navy); margin-bottom: 12px; text-align: center; }
+    .steps { list-style: none; display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .steps li {
+      display: flex; gap: 12px; align-items: flex-start;
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px;
+      font-size: 14px;
+    }
+    .step-n {
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+      background: var(--blue-strong); color: #fff; display: flex; align-items: center; justify-content: center;
+      font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 13px;
     }
 
-    /* ── Participant list ── */
-    .par-list { display: flex; flex-direction: column; gap: 8px; }
-    .par-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 12px; background: var(--bg);
-      border-radius: 8px; font-size: 14px;
+    /* ── Código da sala (grande, para projetar) ── */
+    .code-big {
+      font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 40px;
+      letter-spacing: 8px; color: var(--navy); line-height: 1.1; padding: 10px 0 12px;
     }
-    .dot-online { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
-    .par-name { flex: 1; font-weight: 600; color: var(--text); }
 
-    /* ── Symbol cards ── */
-    .sym-grid { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    /* ── Barra de progresso do lobby ── */
+    .progress { margin: 4px 0 14px; }
+    .bar { position: relative; height: 10px; border-radius: 999px; background: #E6EBF2; overflow: visible; }
+    .bar > span { display: block; height: 100%; border-radius: 999px; background: var(--blue-strong); transition: width .3s ease; }
+    .bar > i { position: absolute; top: -3px; width: 2px; height: 16px; background: var(--ink); opacity: .45; }
+    .progress p { font-size: 13px; color: var(--muted); margin-top: 8px; }
+    .progress p b { color: var(--ink); }
+
+    /* ── Lista de pessoas (chips) ── */
+    .chips { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips li {
+      display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 999px; font-size: 13px; font-weight: 600;
+    }
+    .dot-online { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    .dot-off { background: #B6BFCC; }
+    .par-grid { list-style: none; display: grid; grid-template-columns: 1fr; gap: 6px; }
+    .par-grid li {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      background: var(--bg); border-radius: 10px; font-size: 14px;
+    }
+    .par-name { flex: 1; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .par-off { font-size: 12px; color: var(--muted); }
+
+    /* ── Símbolos ── */
+    .sym-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+    .sym-grid.answer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .sym-card {
-      width: 80px; height: 86px; background: var(--bg);
-      border: 2px solid var(--border); border-radius: 10px;
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; gap: 5px; font-size: 32px;
-      font-weight: 900; color: var(--red); user-select: none;
+      background: var(--bg); border: 2px solid var(--border); border-radius: var(--radius);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      padding: 10px 2px; min-height: 76px;
+      font-size: clamp(26px, 7vw, 38px); line-height: 1.1; font-weight: 800; color: var(--ink); user-select: none;
     }
-    .sym-card-label { font-size: 10px; color: var(--muted); font-family: 'Raleway', sans-serif; font-weight: 700; }
-    .sym-card.pickable { cursor: pointer; transition: transform .12s, border-color .12s, background .12s; }
-    .sym-card.pickable:hover { border-color: var(--blue); background: #EFF6FF; }
-    .sym-card.picked { border-color: var(--blue); background: #EFF6FF; transform: scale(1.06); }
+    .sym-card-label { font-size: 11px; color: var(--muted); font-family: 'Raleway', sans-serif; font-weight: 700; text-align: center; line-height: 1.15; }
+    .sym-card.pickable { cursor: pointer; transition: border-color .2s ease, background .2s ease; font-family: inherit; }
+    button.sym-card { width: 100%; }
+    .sym-card.pickable:hover { border-color: var(--blue); background: var(--blue-tint); }
+    .sym-card.picked { border-color: var(--blue-strong); background: var(--blue-tint); box-shadow: inset 0 0 0 1px var(--blue-strong); }
+    .sym-hint { font-size: 13px; color: var(--muted); margin-top: 10px; }
 
     /* ── Chat ── */
-    .chat-wrap { display: flex; flex-direction: column; gap: 10px; }
     .chat-area {
-      min-height: 200px; max-height: 320px; overflow-y: auto;
-      padding: 10px; background: var(--bg); border-radius: 8px;
+      height: 46vh; min-height: 240px; max-height: 440px; overflow-y: auto;
+      padding: 12px; background: var(--bg); border-radius: 10px;
       display: flex; flex-direction: column; gap: 8px;
       border: 1px solid var(--border);
     }
-    .chat-empty { margin: auto; text-align: center; color: var(--muted); font-size: 13px; }
+    .chat-empty { margin: auto; text-align: center; color: var(--muted); font-size: 14px; max-width: 260px; }
     .bubble {
-      max-width: 80%; padding: 8px 12px; border-radius: 12px;
-      font-size: 14px; line-height: 1.45;
+      max-width: 82%; padding: 9px 13px; border-radius: 14px;
+      font-size: 15px; line-height: 1.45; overflow-wrap: anywhere;
     }
-    .bubble-out {
-      align-self: flex-end; background: var(--blue); color: #fff;
-      border-bottom-right-radius: 4px;
+    .bubble-out { align-self: flex-end; background: var(--blue-strong); color: #fff; border-bottom-right-radius: 4px; }
+    .bubble-in  { align-self: flex-start; background: #fff; border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+    .bubble-meta { font-size: 12px; opacity: .8; margin-bottom: 3px; font-weight: 700; }
+    .chat-compose { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .to-row { display: flex; align-items: center; gap: 10px; }
+    .to-label { font-size: 13px; font-weight: 700; color: var(--muted); flex-shrink: 0; }
+    .to-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .to-chip {
+      position: relative; min-height: 44px; min-width: 62px; padding: 5px 12px; border-radius: 10px;
+      border: 1.5px solid var(--border-strong); background: #fff; color: var(--ink); cursor: pointer;
+      font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 14px; line-height: 1.15;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: background .2s ease, border-color .2s ease;
     }
-    .bubble-in {
-      align-self: flex-start; background: #fff;
-      border: 1px solid var(--border); border-bottom-left-radius: 4px;
+    .to-chip small {
+      display: block; max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-family: 'Aptos','Segoe UI',system-ui,sans-serif; font-weight: 600; font-size: 11px; color: var(--muted);
     }
-    .bubble-meta { font-size: 11px; opacity: .65; margin-bottom: 3px; font-weight: 600; }
-    .chat-send-row { display: flex; gap: 8px; align-items: stretch; }
-    .chat-to { flex-shrink: 0; width: auto; min-width: 100px; font-size: 13px; padding: 8px 10px; }
-    .chat-inp { flex: 1; font-size: 14px; padding: 9px 12px; }
+    .to-chip:hover { border-color: var(--blue); }
+    .to-chip[aria-checked="true"] { background: var(--blue-strong); border-color: var(--blue-strong); color: #fff; }
+    .to-chip[aria-checked="true"] small { color: rgba(255,255,255,.88); }
+    .to-chip .unread {
+      position: absolute; top: -4px; right: -2px; min-width: 18px; height: 18px; padding: 0 5px;
+      border-radius: 999px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; font-family: 'Raleway', sans-serif;
+    }
+    .send-row { display: flex; gap: 8px; align-items: stretch; }
+    .send-row input { flex: 1; }
+    .chat-readonly { font-size: 13px; color: var(--muted); margin-top: 10px; }
 
-    /* ── Monitor (fac) ── */
+    /* ── Monitor (facilitação) ── */
+    .mon-grid { display: grid; grid-template-columns: 1fr; gap: 0; }
+    .mon-feed { height: 56vh; max-height: 560px; min-height: 260px; gap: 6px; }
     .mon-row {
-      display: grid; grid-template-columns: 42px auto 16px auto 1fr;
-      gap: 6px; align-items: baseline; padding: 6px 8px;
-      font-size: 13px; border-radius: 6px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+      padding: 8px 10px; font-size: 14px; border-radius: 8px; background: #fff; border: 1px solid var(--border);
     }
-    .mon-row:nth-child(even) { background: rgba(0,0,0,.025); }
-    .mon-time { color: var(--muted); font-size: 11px; }
-    .mon-from { font-weight: 700; }
+    .mon-time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .mon-flow { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .mon-arr  { color: var(--muted); }
+    .mon-from-name { font-weight: 700; font-size: 13px; }
+    .mon-text { flex-basis: 100%; overflow-wrap: anywhere; }
 
-    /* ── Timer ── */
+    /* ── Cronômetro ── */
     .timer-big {
       font-family: 'Raleway', sans-serif; font-weight: 800;
-      font-size: 40px; text-align: center; color: var(--blue);
-      letter-spacing: 2px;
+      font-size: 40px; text-align: center; color: var(--blue-strong);
+      letter-spacing: 2px; font-variant-numeric: tabular-nums;
     }
+    .timer-big.timer-md { font-size: 34px; text-align: left; letter-spacing: 1px; }
     .timer-big.warn { color: var(--warn); }
     .timer-big.end  { color: var(--danger); }
-    .timer-lbl { text-align: center; font-size: 12px; color: var(--muted); margin-top: 4px; letter-spacing: .3px; }
+    .status-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    .confirm-box { background: var(--danger-tint); border: 1px solid #F3C4C4; border-radius: 10px; padding: 14px; }
+    .confirm-box p { font-size: 14px; margin-bottom: 12px; }
+    .status-note { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
 
-    /* ── Rules banner ── */
-    .rules-banner {
-      background: #EEF5FF; border: 1px solid #BDD5F5;
-      border-radius: var(--radius); padding: 12px 16px;
-      font-size: 13px; color: #1D4ED8; line-height: 1.55;
+    /* ── Cartão de papel (participante) ── */
+    .role-card { display: flex; gap: 14px; align-items: center; }
+    .role-avatar {
+      flex-shrink: 0; width: 52px; height: 52px; border-radius: 50%; background: var(--blue-strong); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 20px;
+    }
+    .role-card h2 { font-size: 18px; margin-bottom: 2px; }
+    .role-card p { font-size: 14px; color: var(--muted); }
+    .role-card p strong { color: var(--ink); }
+    .briefing {
+      margin-top: 12px; padding: 12px 14px; background: var(--warn-tint); border-radius: 10px;
+      font-size: 14px; color: #5A2D05;
     }
 
-    /* ── Result ── */
+    /* ── Botão de enviar resposta (Pessoa A) ── */
+    .submit-hero {
+      display: block; width: 100%; cursor: pointer; border: none; text-align: center;
+      background: var(--green); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 14px;
+      transition: background .2s ease, transform .1s ease; color: #fff;
+    }
+    .submit-hero:hover { background: #116530; }
+    .submit-hero:active { transform: scale(.99); }
+    .submit-hero-label { font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 16px; display: block; }
+    .submit-hero-sub { font-size: 13px; color: rgba(255,255,255,.92); display: block; margin-top: 2px; }
+    .answer-panel { border-color: var(--green); border-width: 2px; }
+    .answer-info { min-height: 22px; font-size: 14px; color: var(--navy); font-weight: 700; margin: 12px 0; }
+
+    /* ── Espera (participante) ── */
+    .wait-card { text-align: center; padding: 32px 20px; }
+    .wait-card h1, .wait-card h2 { font-size: 22px; margin: 14px 0 8px; color: var(--navy); }
+    .wait-card .chips { justify-content: center; margin-top: 14px; }
+    .pulse { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--green); position: relative; }
+    .pulse::after {
+      content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--green);
+      opacity: .5; animation: pulse 1.8s ease-out infinite;
+    }
+    @keyframes pulse { from { transform: scale(.6); opacity: .6; } to { transform: scale(1.5); opacity: 0; } }
+    .count-line { font-size: 14px; color: var(--muted); margin-top: 14px; }
+    .count-line b { color: var(--ink); font-size: 16px; }
+    .join-room { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--blue-tint); border-radius: 10px; margin-bottom: 18px; }
+    .join-room b { font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 4px; color: var(--navy); }
+    .join-room span { font-size: 13px; color: var(--muted); }
+
+    /* ── Resultado ── */
     .result-box { text-align: center; padding: 8px 0; }
-    .result-ok  {
-      background: #F0FDF4; color: var(--green); padding: 12px 18px;
-      border-radius: 8px; font-weight: 700; margin: 10px 0;
-      border: 1px solid #BBF7D0;
+    .result-glyph { font-size: 64px; line-height: 1.1; color: var(--ink); margin: 6px 0; font-weight: 800; }
+    .result-name { font-size: 14px; color: var(--muted); margin-bottom: 10px; }
+    .result-ok, .result-err {
+      padding: 12px 18px; border-radius: 10px; font-weight: 800; margin: 10px 0;
+      font-family: 'Raleway', sans-serif;
     }
-    .result-err {
-      background: #FEF2F2; color: var(--danger); padding: 12px 18px;
-      border-radius: 8px; font-weight: 700; margin: 10px 0;
-      border: 1px solid #FECACA;
-    }
+    .result-ok  { background: var(--green-tint); color: var(--green); border: 1px solid #BCE3C7; }
+    .result-err { background: var(--danger-tint); color: var(--danger); border: 1px solid #F3C4C4; }
+    .result-pair { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    .result-pair .result-box { padding: 4px 0; }
+    .result-label { font-size: 13px; color: var(--muted); }
+    .await-box { text-align: center; padding: 8px 0 4px; }
+    .await-box p { margin: 8px 0 0; }
 
-    /* ── Modal ── */
-    .modal-bg {
-      position: fixed; inset: 0; background: rgba(0,0,0,.55);
-      display: none; align-items: center; justify-content: center;
-      z-index: 999; backdrop-filter: blur(2px);
-    }
-    .modal-bg.open { display: flex; }
-    .modal-box {
-      background: #fff; border-radius: 16px; padding: 30px 24px;
-      width: 90%; max-width: 420px; text-align: center;
-      box-shadow: 0 20px 60px rgba(0,0,0,.2);
-    }
-    .modal-title {
-      font-family: 'Raleway', sans-serif; font-weight: 800;
-      font-size: 19px; color: var(--red); margin-bottom: 6px;
-    }
-    .modal-sub { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
-    .modal-btns { display: flex; gap: 10px; margin-top: 16px; }
-
-    /* ── Toast ── */
-    .err-msg { color: var(--danger); font-size: 13px; margin-top: 8px; display: none; }
+    /* ── Toast e aviso de conexão ── */
+    .err-msg { color: var(--danger); font-size: 14px; margin-top: 10px; display: none; font-weight: 600; }
     #toast {
-      position: fixed; bottom: 24px; left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: #1C1C1E; color: #fff;
-      padding: 10px 20px; border-radius: 8px;
-      font-size: 13px; font-weight: 600;
-      transition: transform .25s; z-index: 9999; pointer-events: none;
-      box-shadow: 0 4px 16px rgba(0,0,0,.2);
+      position: fixed; top: 68px; left: 50%;
+      transform: translateX(-50%) translateY(-24px); opacity: 0; visibility: hidden;
+      background: var(--ink); color: #fff; max-width: min(92vw, 420px);
+      padding: 11px 20px; border-radius: 999px;
+      font-size: 14px; font-weight: 600; text-align: center;
+      transition: transform .25s ease, opacity .25s ease, visibility 0s linear .25s; z-index: 9999; pointer-events: none;
+      box-shadow: 0 6px 20px rgba(33,0,0,.25);
     }
-    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; visibility: visible; transition-delay: 0s; }
+    .conn-banner {
+      position: fixed; top: 56px; left: 0; right: 0; z-index: 150; text-align: center;
+      background: var(--warn); color: #fff; font-size: 13px; font-weight: 700; padding: 6px 12px;
+    }
 
     /* ═══════════════════════════
        CABIN VISUAL
@@ -296,27 +429,6 @@
     .cabin-map svg { display: block; width: 100%; height: auto; }
     .cabin-map .plane-art { filter: drop-shadow(0 5px 6px rgba(33,0,0,.14)); }
     .bp-seat { transition: opacity .15s; }
-
-    /* Tela da dinâmica mais larga: em telas grandes, mapa à esquerda e conversa à direita */
-    .game-grid { display: flex; flex-direction: column; }
-    .game-left, .game-right { display: contents; }
-    #parResultCard { order: 0; } #parTimerCard { order: 1; } #parBriefing { order: 2; }
-    #parSubmitWrap { order: 3; } #parCabinWrap { order: 4; } #parSymCard { order: 5; }
-    #parRulesBanner { order: 6; } .game-right > .card:last-child { order: 7; }
-    @media (min-width: 900px) {
-      #pp-game.container { max-width: 1180px; }
-      .game-grid { display: grid; grid-template-columns: minmax(420px, 6fr) minmax(0, 6fr); gap: 0 20px; align-items: start; }
-      .game-left, .game-right { display: block; }
-      #parResultCard { grid-column: 1 / -1; }
-      .game-grid > #parResultCard { order: 0; }
-      .game-left { position: sticky; top: 12px; }
-      .cabin-map { max-width: 560px; }
-      .game-right .chat-area { max-height: 420px; min-height: 240px; }
-      .game-right .sym-card { width: 96px; height: 100px; font-size: 40px; }
-    }
-    @media (min-width: 1024px) {
-      #s-fac-game .container, #s-fac-lobby .container { max-width: 1100px; }
-    }
 
     /* Cabin legend */
     .cabin-legend {
@@ -332,357 +444,417 @@
     }
 
     /* ═══════════════════════════
-       TABS (facilitator)
+       TELA DA DINÂMICA (participante)
+    ═══════════════════════════ */
+    .game-grid { display: flex; flex-direction: column; }
+    .game-left, .game-right { display: contents; }
+    #parResultCard { order: 0; }
+    #parRoleCard { order: 1; } #parSubmitWrap { order: 2; } #answerPanel { order: 3; }
+    #parSymCard { order: 4; } .game-tabs { order: 5; } #parCabinWrap { order: 6; } #parChatCard { order: 7; }
+    .game-tabs { display: flex; gap: 6px; margin-bottom: 12px; background: #E9EEF5; padding: 4px; border-radius: 12px; }
+    .game-tabs button {
+      flex: 1; min-height: 42px; border: none; border-radius: 9px; background: transparent; cursor: pointer;
+      font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 14px; color: var(--muted);
+      transition: background .2s ease, color .2s ease; position: relative;
+    }
+    .game-tabs button[aria-selected="true"] { background: #fff; color: var(--navy); box-shadow: var(--shadow); }
+    .game-tabs .tab-badge {
+      display: inline-flex; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 999px;
+      background: var(--danger); color: #fff; font-size: 11px; align-items: center; justify-content: center;
+    }
+    @media (max-width: 899px) {
+      #pp-game[data-tab="chat"] #parCabinWrap { display: none !important; }
+      #pp-game[data-tab="map"] #parChatCard { display: none; }
+    }
+    @media (min-width: 900px) {
+      #pp-game.container { max-width: 1180px; }
+      .game-tabs { display: none; }
+      .game-grid { display: grid; grid-template-columns: minmax(420px, 6fr) minmax(0, 6fr); gap: 0 20px; align-items: start; }
+      .game-left, .game-right { display: block; }
+      #parResultCard { grid-column: 1 / -1; }
+      .game-grid > #parResultCard { order: 0; }
+      .game-left { position: sticky; top: 72px; }
+      .cabin-map { max-width: 560px; }
+      .sym-grid.answer-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+      .chat-area { height: 380px; }
+      #pp-game.container.is-ended { max-width: 760px; }
+      #pp-game.is-ended .game-grid { display: block; }
+      #pp-game.is-ended .game-left { display: none; }
+    }
+    #pp-game.is-ended .game-tabs { display: none; }
+    #pp-game.is-ended #parChatCard { display: block !important; }
+
+    /* ═══════════════════════════
+       ABAS (facilitação)
     ═══════════════════════════ */
     .tab-bar {
-      display: flex; gap: 0; overflow-x: auto;
+      display: flex; gap: 4px; overflow-x: auto;
       border-bottom: 2px solid var(--border);
-      margin-bottom: 16px; scrollbar-width: none;
+      margin-bottom: 18px; scrollbar-width: none;
     }
     .tab-bar::-webkit-scrollbar { display: none; }
     .tab-btn {
-      padding: 9px 18px; border: none;
+      min-height: 44px; padding: 9px 18px; border: none;
       background: transparent; color: var(--muted);
-      font-family: 'Raleway', sans-serif; font-weight: 700; font-size: 13px;
+      font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 14px;
       cursor: pointer; white-space: nowrap;
-      transition: color .15s; border-bottom: 2px solid transparent;
+      transition: color .2s ease; border-bottom: 3px solid transparent;
       margin-bottom: -2px;
     }
-    .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
-    .tab-btn:hover:not(.active) { color: var(--text); }
-    .sdot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-left: 5px; vertical-align: middle; }
-    .sdot-lobby   { background: var(--muted); }
+    .tab-btn.active { color: var(--navy); border-bottom-color: var(--blue-strong); }
+    .tab-btn:hover:not(.active) { color: var(--ink); }
+    .sdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-left: 6px; vertical-align: middle; }
+    .sdot-lobby   { background: #B6BFCC; }
     .sdot-playing { background: var(--green); }
-    .sdot-ended   { background: var(--danger); }
+    .sdot-ended   { background: var(--warn); }
 
     /* ═══════════════════════════
-       SUBMIT HERO CTA
+       LOBBY E VISÃO GERAL (facilitação)
     ═══════════════════════════ */
-    .submit-hero {
-      display: block; width: 100%; border: none; cursor: pointer;
-      background: var(--green);
-      border-radius: var(--radius); padding: 22px;
-      text-align: center; margin-bottom: 12px;
-      transition: transform .1s, box-shadow .15s;
+    .flow-hint {
+      display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center;
+      font-size: 14px; color: var(--muted); margin-bottom: 16px;
     }
-    .submit-hero:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(22,163,74,.3); }
-    .submit-hero:active { transform: scale(.98); }
-    .submit-hero-icon  { font-size: 28px; display: block; margin-bottom: 6px; }
-    .submit-hero-label {
-      font-family: 'Raleway', sans-serif; font-weight: 800;
-      font-size: 17px; color: #fff; display: block; letter-spacing: -.2px;
+    .flow-hint span { display: inline-flex; align-items: center; gap: 8px; }
+    .flow-hint .step-n { width: 24px; height: 24px; font-size: 12px; }
+    .lobby-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    .plane-card { margin-bottom: 0; }
+    .plane-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .plane-head h3 { font-size: 16px; color: var(--navy); }
+    .plane-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .plane-card .hint { font-size: 13px; color: var(--muted); margin-top: 10px; text-align: center; }
+    .plane-card .chips { margin-bottom: 14px; min-height: 30px; }
+    .plane-card .empty { font-size: 13px; color: var(--muted); }
+    .overview-summary { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+    .stat {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 12px 18px; min-width: 130px;
     }
-    .submit-hero-sub { font-size: 12px; color: rgba(255,255,255,.8); display: block; margin-top: 4px; }
-
-    /* ═══════════════════════════
-       LOBBY PLANE CARDS
-    ═══════════════════════════ */
-    .plane-link-row {
-      background: var(--card); border-radius: var(--radius);
-      padding: 18px; margin-bottom: 10px;
-      border: 1.5px solid var(--border);
-      box-shadow: var(--shadow);
-    }
-    .plane-link-title {
-      font-family: 'Raleway', sans-serif; font-weight: 800;
-      font-size: 14px; color: var(--navy); margin-bottom: 8px;
-    }
-    .plane-code-disp {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-family: 'Raleway', sans-serif; font-weight: 800;
-      font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
-      color: var(--muted); background: var(--bg);
-      border: 1px solid var(--border); border-radius: 5px;
-      padding: 4px 10px; margin-bottom: 10px;
-    }
-    .plane-link-url {
-      font-size: 11px; color: var(--muted); word-break: break-all;
-      line-height: 1.4; margin-bottom: 8px;
-    }
-
-    /* ═══════════════════════════
-       FAC OVERVIEW CARDS
-    ═══════════════════════════ */
-    .overview-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 10px; margin-bottom: 14px;
-    }
+    .stat b { display: block; font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 26px; color: var(--navy); line-height: 1.1; }
+    .stat span { font-size: 13px; color: var(--muted); }
+    .overview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 14px; }
     .overview-card {
       background: var(--card); border-radius: var(--radius);
       padding: 16px; border: 1.5px solid var(--border);
-      cursor: pointer; transition: border-color .15s, transform .1s;
-      box-shadow: var(--shadow);
+      cursor: pointer; transition: border-color .2s ease, transform .1s ease;
+      box-shadow: var(--shadow); text-align: left; width: 100%; font: inherit; color: inherit;
     }
-    .overview-card:hover { border-color: var(--blue); transform: translateY(-1px); }
-    .overview-card-title { font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 14px; color: var(--navy); margin-bottom: 4px; }
-    .overview-card-meta  { font-size: 12px; color: var(--muted); }
+    .overview-card:hover { border-color: var(--blue); }
+    .overview-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .overview-card-title { font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 16px; color: var(--navy); }
+    .overview-card-meta  { font-size: 13px; color: var(--muted); }
+    .overview-answer { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .overview-answer .glyph { font-size: 28px; line-height: 1; }
 
     /* ═══════════════════════════
-       RESPONSIVE
+       RESPONSIVO
     ═══════════════════════════ */
-    @media (max-width: 640px) {
-      .container { padding: 12px 12px 32px; }
-      .cover-wrap { padding: 32px 0 24px; }
-      .cover-title { letter-spacing: -0.5px; }
-      .sym-card { width: 70px; height: 76px; font-size: 28px; }
-      /* .room-code — sem ajuste responsivo necessário (badge fixo) */
-      .overview-grid { grid-template-columns: repeat(2, 1fr); }
-      .chat-area { max-height: 260px; }
-      .modal-box { padding: 24px 16px; }
+    @media (max-width: 480px) {
+      .top-header { padding: 0 14px; gap: 10px; }
+      .top-header .title { display: none; }
+      .brand-sep { display: none; }
+      .code-big { font-size: 34px; letter-spacing: 6px; }
+      .sym-card-label { display: none; }
+      .sym-card { min-height: 64px; padding: 12px 2px; }
+      .sym-grid.answer-grid .sym-card-label { display: block; }
+      .role-avatar { width: 46px; height: 46px; font-size: 18px; }
+      .row-btns .btn { flex: 1; }
+      .chat-compose { position: sticky; bottom: 0; background: #fff; padding: 8px 0 2px; margin-top: 4px; z-index: 5; }
+      .chat-area { height: 40vh; }
     }
-    @media (max-width: 400px) {
-      .sym-card { width: 60px; height: 68px; font-size: 24px; }
-      /* .room-code — badge sem ajuste em 400px */
-      .row-btns { flex-direction: column; }
+    @media (min-width: 640px) {
+      .entry-grid { grid-template-columns: 1fr 1fr; }
+      .steps { grid-template-columns: repeat(3, 1fr); }
+      .steps li { flex-direction: column; }
+      .lobby-grid { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+      .result-pair { grid-template-columns: 1fr 1fr; }
     }
     @media (min-width: 768px) {
-      .container { padding: 24px 24px 48px; }
-      .cover-wrap { padding: 56px 0 40px; }
-      .chat-area { max-height: 380px; }
-      .sym-card { width: 88px; height: 94px; font-size: 36px; }
+      .container { padding: 28px 24px 56px; }
     }
     @media (min-width: 1024px) {
-      .container { max-width: 720px; }
+      .mon-grid { grid-template-columns: 360px minmax(0, 1fr); gap: 0 18px; align-items: start; }
+      .mon-side { position: sticky; top: 72px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
     }
 </style>
 </head>
 <body>
 
-<div id="toast"></div>
-<div id="fatalMsg" style="display:none;background:#FEF2F2;color:#DC2626;padding:14px 18px;text-align:center;font-weight:700;font-size:14px">
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="connBanner" class="conn-banner" role="status" hidden>Sem conexão. Tentando reconectar...</div>
+<div id="fatalMsg" style="display:none;background:#FDECEC;color:#B91C1C;padding:14px 18px;text-align:center;font-weight:700;font-size:14px" role="alert">
   Não foi possível carregar o serviço de conexão. Verifique a internet (ou se a rede bloqueia gstatic.com) e recarregue a página.
 </div>
-
-<!-- Answer Modal -->
-<div id="answerModal" class="modal-bg">
-  <div class="modal-box">
-    <div class="modal-title">Submeter Resposta Final</div>
-    <div class="modal-sub">Qual símbolo aparece em <strong>todas</strong> as folhas?</div>
-    <div class="sym-grid" id="answerGrid" style="justify-content:center"></div>
-    <div id="answerInfo" style="min-height:20px;font-size:13px;color:var(--muted);margin:12px 0"></div>
-    <div class="modal-btns">
-      <button class="btn btn-outline btn-full" onclick="closeAnswerModal()">Cancelar</button>
-      <button class="btn btn-green btn-full" id="btnConfirm" onclick="confirmAnswer()" disabled>Confirmar resposta</button>
-    </div>
-  </div>
-</div>
+<noscript><p style="padding:16px;text-align:center">Esta dinâmica precisa de JavaScript ativado no navegador.</p></noscript>
 
 <!-- HOME -->
 <div id="s-home" class="screen active">
-  <div class="container">
-    <div class="cover-wrap" style="text-align:center">
-      <div class="cover-pill">Dinâmica online</div>
-      <p class="cover-title">Avião</p>
-      <p class="cover-sub">Configure a sessão e compartilhe os links com os grupos. Cada participante entra pelo link do seu avião.</p>
-      <div class="cover-cta-wrap">
-        <button class="btn btn-red btn-full" style="font-size:16px;padding:15px 22px" onclick="goFac()">Iniciar dinâmica</button>
-      </div>
-      <p class="cover-par-hint">Participante? Acesse o link compartilhado pela pessoa facilitadora ou digite o código do seu avião:</p>
-      <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
-        <input type="text" id="homeCodeInp" maxlength="4" placeholder="Código" style="max-width:120px;text-transform:uppercase;text-align:center;letter-spacing:3px">
-        <button class="btn btn-outline" onclick="goParWithCode()">Entrar</button>
-      </div>
-      <div class="err-msg" id="homeCodeErr"></div>
+  <header class="top-header">
+    <div class="brand"><span class="wordmark">crescimentum</span></div>
+  </header>
+  <main class="container">
+    <section class="hero">
+      <span class="eyebrow">Dinâmica online</span>
+      <h1>Dinâmica do Avião</h1>
+      <p class="lead">Cada pessoa recebe uma folha de símbolos e só pode conversar com algumas das outras. Juntas, descobrem qual símbolo aparece em todas as folhas.</p>
+    </section>
+
+    <div class="entry-grid">
+      <section class="card entry-card" aria-labelledby="h-fac">
+        <h2 class="card-title" id="h-fac">Conduzir a dinâmica</h2>
+        <p class="muted">Crie a sessão, compartilhe o link de cada avião e acompanhe tudo em tempo real.</p>
+        <button class="btn btn-primary btn-full" onclick="goFac()">Iniciar dinâmica</button>
+      </section>
+      <section class="card entry-card" aria-labelledby="h-par">
+        <h2 class="card-title" id="h-par">Sou participante</h2>
+        <p class="muted">Abra o link que a pessoa facilitadora compartilhou ou digite o código de 4 caracteres.</p>
+        <form class="code-row" onsubmit="goParWithCode(); return false;">
+          <label class="sr-only" for="homeCodeInp">Código da sala</label>
+          <input type="text" id="homeCodeInp" maxlength="4" placeholder="Código" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          <button class="btn btn-outline" type="submit">Entrar</button>
+        </form>
+        <div class="err-msg" id="homeCodeErr" role="alert"></div>
+      </section>
     </div>
-    <hr class="cover-divider">
-    <div class="how-card">
-      <div class="card-title">Como funciona</div>
-      <p>A pessoa facilitadora cria a sessão e compartilha os links. Cada participante recebe uma folha com 5 símbolos.
-        Cada pessoa só pode conversar com algumas das outras, e quem pode falar com quem aparece na sua tela quando a dinâmica começa.</p>
-    </div>
-  </div>
+
+    <section class="how" aria-labelledby="h-how">
+      <h2 id="h-how">Como funciona</h2>
+      <ol class="steps">
+        <li><span class="step-n">1</span><span>A pessoa facilitadora cria a sessão e compartilha o link de cada avião.</span></li>
+        <li><span class="step-n">2</span><span>Cada participante recebe um papel sorteado (A, B1, B2, C e seguintes) e uma folha com 5 símbolos.</span></li>
+        <li><span class="step-n">3</span><span>Só algumas pessoas podem conversar entre si. Quem envia a resposta final é a Pessoa A.</span></li>
+      </ol>
+    </section>
+  </main>
 </div>
 
 <!-- FAC SETUP -->
 <div id="s-fac-setup" class="screen">
-  <div class="top-header">
-    <span class="title">Dinâmica do Avião</span>
-    <span class="hbadge">Facilitador</span>
-  </div>
-  <div class="container">
+  <header class="top-header">
+    <div class="brand"><span class="wordmark">crescimentum</span><span class="brand-sep"></span><span class="title">Dinâmica do Avião</span></div>
+    <div class="hright"><span class="hbadge">Facilitação</span></div>
+  </header>
+  <main class="container container-form">
     <div class="card">
-      <div class="card-title">Configurar sessão</div>
-      <div class="form-group">
-        <label>Número de aviões (grupos simultâneos)</label>
-        <select id="numPlanesSel">
-          <option value="1">1 avião</option>
-          <option value="2">2 aviões simultâneos</option>
-          <option value="3">3 aviões simultâneos</option>
-          <option value="4">4 aviões simultâneos</option>
-          <option value="5">5 aviões simultâneos</option>
-        </select>
+      <h2 class="card-title">Configurar sessão</h2>
+
+      <div class="field">
+        <span class="field-label" id="lblPlanes">Quantos aviões (grupos ao mesmo tempo)?</span>
+        <div class="seg" role="radiogroup" aria-labelledby="lblPlanes" data-for="numPlanesSel"></div>
+        <input type="hidden" id="numPlanesSel" value="1">
       </div>
-      <div class="form-group">
-        <label>Participantes por avião</label>
-        <select id="numPartSel">
-          <option value="6">6 pessoas — A, B1, B2, C, D, E</option>
-          <option value="7">7 pessoas — + F</option>
-          <option value="8">8 pessoas — + G</option>
-          <option value="9">9 pessoas — + H</option>
-          <option value="10">10 pessoas — + I</option>
-          <option value="11">11 pessoas — + J</option>
-        </select>
+
+      <div class="field">
+        <span class="field-label" id="lblPart">Quantas pessoas por avião?</span>
+        <p class="field-hint">Mínimo de 6 para iniciar. Os papéis entram na ordem A, B1, B2, C, D e seguintes.</p>
+        <div class="seg" role="radiogroup" aria-labelledby="lblPart" data-for="numPartSel"></div>
+        <input type="hidden" id="numPartSel" value="6">
       </div>
-      <div class="form-group">
-        <label>Tempo da dinâmica em minutos (0 = sem timer)</label>
-        <input type="number" id="timerMinInp" value="15" min="0" max="90">
+
+      <div class="field">
+        <span class="field-label" id="lblTime">Tempo da dinâmica</span>
+        <div class="seg" role="radiogroup" aria-labelledby="lblTime" data-for="timerMinInp"></div>
+        <div class="inline-input">
+          <label class="sr-only" for="timerMinInp">Tempo em minutos</label>
+          <input type="number" id="timerMinInp" value="15" min="0" max="90" inputmode="numeric">
+          <span>minutos (0 = sem cronômetro, máximo 90)</span>
+        </div>
       </div>
-      <button class="btn btn-red btn-full mt-8" id="btnCreate" onclick="createSession()">Criar sessão</button>
-      <div class="err-msg" id="setupErr"></div>
+
+      <p class="summary" id="setupSummary" aria-live="polite"></p>
+      <button class="btn btn-primary btn-full" id="btnCreate" onclick="createSession()">Criar sessão</button>
+      <div class="err-msg" id="setupErr" role="alert"></div>
     </div>
+
     <div class="card">
-      <div class="card-title">Recuperar sessão</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Fechou a aba sem querer? Digite o código da sessão (4 caracteres) para voltar ao monitor, neste mesmo navegador.</p>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="recCodeInp" maxlength="4" placeholder="Código da sessão" style="text-transform:uppercase;letter-spacing:3px">
+      <h2 class="card-title">Recuperar sessão</h2>
+      <p class="muted small" style="margin-bottom:12px">Fechou a aba sem querer? Digite o código da sessão (4 caracteres) para voltar ao monitor, neste mesmo navegador.</p>
+      <div class="code-row" style="margin-top:0">
+        <label class="sr-only" for="recCodeInp">Código da sessão</label>
+        <input type="text" id="recCodeInp" maxlength="4" placeholder="Código da sessão" autocomplete="off" autocapitalize="characters" spellcheck="false">
         <button class="btn btn-outline" onclick="recoverSession()">Recuperar</button>
       </div>
-      <div class="err-msg" id="recErr"></div>
+      <div class="err-msg" id="recErr" role="alert"></div>
     </div>
-  </div>
+  </main>
 </div>
 
 <!-- FAC LOBBY -->
 <div id="s-fac-lobby" class="screen">
-  <div class="top-header">
-    <span class="title">Sala de espera</span>
-    <span class="hbadge" id="lobbySessionBadge">——</span>
-  </div>
-  <div class="container">
-    <div class="card" style="background:#EEF5FF;border-color:#BDD5F5">
-      <div class="card-title" style="color:#1D4ED8">Instrução</div>
-      <p style="font-size:14px;color:#1E40AF;line-height:1.6">Compartilhe o link ou código correto com cada grupo. Quando o número mínimo estiver conectado, clique em <strong>Iniciar</strong>.</p>
+  <header class="top-header">
+    <div class="brand"><span class="wordmark">crescimentum</span><span class="brand-sep"></span><span class="title">Sala de espera</span></div>
+    <div class="hright"><span class="hbadge" id="lobbySessionBadge">Sessão</span></div>
+  </header>
+  <main class="container container-wide">
+    <div class="flow-hint">
+      <span><span class="step-n">1</span> Compartilhe o link ou o código de cada avião</span>
+      <span><span class="step-n">2</span> Aguarde as pessoas entrarem</span>
+      <span><span class="step-n">3</span> Inicie cada avião</span>
     </div>
-    <div class="err-msg" id="facDiag" style="display:none"></div>
-    <div id="facLobbyPlanes"></div>
-  </div>
+    <div class="err-msg" id="facDiag" style="display:none" role="alert"></div>
+    <div id="facLobbyPlanes" class="lobby-grid"></div>
+  </main>
 </div>
 
 <!-- FAC GAME -->
 <div id="s-fac-game" class="screen">
-  <div class="top-header">
-    <span class="title">Monitor da sessão</span>
-    <span class="hbadge" id="facGameBadge">——</span>
-  </div>
-  <div class="container">
-    <div class="tab-bar" id="facTabBar"></div>
+  <header class="top-header">
+    <div class="brand"><span class="wordmark">crescimentum</span><span class="brand-sep"></span><span class="title">Monitor da sessão</span></div>
+    <div class="hright"><span class="hbadge" id="facGameBadge">Sessão</span></div>
+  </header>
+  <main class="container container-wide">
+    <div class="tab-bar" id="facTabBar" role="tablist"></div>
     <div id="facPlaneContent"></div>
-  </div>
+  </main>
 </div>
 
 <!-- PAR JOIN -->
 <div id="s-par-join" class="screen">
-  <div class="top-header">
-    <span class="title">Dinâmica do Avião</span>
-  </div>
-  <div class="container">
-    <div class="card">
-      <div id="parJoinRoomBadge" style="margin-bottom:14px"></div>
-      <div class="form-group">
-        <label>Seu nome</label>
-        <input type="text" id="nameInp" maxlength="30" placeholder="Como você se chama?">
+  <header class="top-header">
+    <div class="brand"><span class="wordmark">crescimentum</span><span class="brand-sep"></span><span class="title">Dinâmica do Avião</span></div>
+  </header>
+  <main class="container container-form">
+    <form class="card" onsubmit="joinRoom(); return false;">
+      <h1 class="card-title" style="font-size:20px">Entrar na dinâmica</h1>
+      <div id="parJoinRoomBadge"></div>
+      <div class="field">
+        <label for="nameInp">Seu nome</label>
+        <input type="text" id="nameInp" maxlength="30" placeholder="Nome ou apelido" autocomplete="given-name" enterkeyhint="go">
+        <p class="field-hint" style="margin:8px 0 0">Seu papel será sorteado quando a pessoa facilitadora iniciar a dinâmica.</p>
       </div>
-      <!-- código mantido oculto — preenchido via URL -->
+      <!-- código mantido oculto: preenchido via URL -->
       <input type="hidden" id="codeInp">
-      <button class="btn btn-red btn-full" id="btnJoin" onclick="joinRoom()">Entrar</button>
-      <div class="err-msg" id="joinErr"></div>
-    </div>
-  </div>
+      <button class="btn btn-primary btn-full" id="btnJoin" type="submit">Entrar</button>
+      <div class="err-msg" id="joinErr" role="alert"></div>
+    </form>
+  </main>
 </div>
 
 <!-- PAR GAME -->
 <div id="s-par-game" class="screen">
-  <div class="top-header">
-    <span class="title">Dinâmica do Avião</span>
-    <span class="hbadge" id="parRoleHdr">—</span>
-  </div>
+  <header class="top-header">
+    <div class="brand"><span class="wordmark">crescimentum</span><span class="brand-sep"></span><span class="title">Dinâmica do Avião</span></div>
+    <div class="hright">
+      <div id="parTimerCard" class="timer-chip" style="display:none">
+        <div class="timer-big" id="parTimerDisp">--:--</div>
+        <span class="sr-only" id="parTimerLbl"></span>
+      </div>
+      <span class="hbadge" id="parRoleHdr">Sala</span>
+    </div>
+  </header>
 
   <!-- LOBBY state -->
-  <div id="pp-lobby" class="container">
-    <div class="card" style="text-align:center;padding:40px 20px">
-      
-      <div class="card-title" style="justify-content:center">Aguardando início</div>
-      <p style="color:var(--muted);font-size:14px;line-height:1.6">A pessoa facilitadora iniciará a dinâmica em breve.</p>
+  <main id="pp-lobby" class="container container-form">
+    <div class="card wait-card">
+      <span class="pulse" aria-hidden="true"></span>
+      <h1>Você está na sala</h1>
+      <p class="muted">A pessoa facilitadora vai iniciar a dinâmica em breve. Mantenha esta página aberta: seu papel será sorteado nesse momento.</p>
+      <p class="count-line"><b id="parLobbyCount">1</b> de <span id="parLobbyMax">6</span> pessoas na sala</p>
+      <ul class="chips" id="parLobbyList"></ul>
       <div id="parLobbyRoleInfo" class="mt-12"></div>
     </div>
-  </div>
+  </main>
 
   <!-- PLAYING / ENDED state -->
-  <div id="pp-game" class="container" style="display:none">
-    <div class="game-grid">
+  <main id="pp-game" class="container" style="display:none" data-tab="chat">
 
     <div class="card" id="parResultCard" style="display:none">
-      <div class="card-title">Resultado</div>
+      <h2 class="card-title">Resultado</h2>
       <div class="result-box" id="parResultContent"></div>
     </div>
 
+    <div class="game-grid">
       <div class="game-left">
-    <div id="parCabinWrap" style="display:none">
-      <div class="card" style="padding:16px 12px">
-        <div class="card-title">Mapa da cabine</div>
-        <div id="parCabinInner"></div>
-        <div class="cabin-legend">
-          <div class="cabin-legend-item">
-            <div class="legend-dot" style="background:var(--blue)"></div>
-            <span>Você</span>
-          </div>
-          <div class="cabin-legend-item">
-            <div class="legend-dashed"></div>
-            <span>Pode se comunicar</span>
-          </div>
-          <div class="cabin-legend-item">
-            <div class="legend-dot" style="background:var(--border)"></div>
-            <span>Outros</span>
+        <div id="parCabinWrap" style="display:none">
+          <div class="card" style="padding:16px 12px">
+            <h2 class="card-title" style="padding:0 8px">Mapa da cabine</h2>
+            <div id="parCabinInner"></div>
+            <div class="cabin-legend">
+              <div class="cabin-legend-item">
+                <div class="legend-dot" style="background:var(--blue)"></div>
+                <span>Você</span>
+              </div>
+              <div class="cabin-legend-item">
+                <div class="legend-dashed"></div>
+                <span>Pode se comunicar</span>
+              </div>
+              <div class="cabin-legend-item">
+                <div class="legend-dot" style="background:var(--border-strong)"></div>
+                <span>Outras pessoas</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-      </div>
       <div class="game-right">
-    <div class="card" id="parTimerCard" style="display:none">
-      <div class="timer-big" id="parTimerDisp">--:--</div>
-      <div class="timer-lbl" id="parTimerLbl">Em andamento</div>
-    </div>
+        <section class="card" id="parRoleCard" style="display:none" aria-label="Seu papel">
+          <div class="role-card">
+            <div class="role-avatar" id="parRoleAvatar" aria-hidden="true">?</div>
+            <div>
+              <h2 id="parRoleTitle">Você é a Pessoa A</h2>
+              <p id="parRulesBanner"></p>
+            </div>
+          </div>
+          <div class="briefing" id="parBriefing" style="display:none">
+            <strong>Sua missão:</strong> você envia a resposta final do grupo. Converse com B1 e B2 e só envie quando todas as pessoas estiverem de acordo.
+          </div>
+        </section>
 
-    <div class="card" id="parBriefing" style="display:none">
-      <div class="card-title">Orientação para a Pessoa A</div>
-      <p style="font-size:14px;line-height:1.6">Você é a pessoa que submete a resposta final do grupo. Converse com B1 e B2 para chegar a um consenso e só envie a resposta quando o grupo estiver de acordo.</p>
-    </div>
-
-    <div id="parSubmitWrap" style="display:none">
-      <button class="submit-hero" onclick="openAnswerModal()">
-        
-        <span class="submit-hero-label">Submeter resposta final</span>
-        <span class="submit-hero-sub">Toque aqui quando o grupo chegar a um consenso</span>
-      </button>
-    </div>
-
-    <div class="card" id="parSymCard">
-      <div class="card-title">Seus símbolos — não mostre a ninguém</div>
-      <div class="sym-grid" id="parSymGrid"></div>
-    </div>
-
-    <div class="rules-banner" id="parRulesBanner" style="margin-bottom:12px;display:none"></div>
-
-    <div class="card">
-      <div class="card-title">Comunicação</div>
-      <div class="chat-wrap">
-        <div class="chat-area" id="parChat">
-          <div class="chat-empty" id="parChatEmpty">Nenhuma mensagem ainda.</div>
+        <div id="parSubmitWrap" style="display:none">
+          <button class="submit-hero" type="button" onclick="openAnswerPanel()">
+            <span class="submit-hero-label">Enviar resposta final</span>
+            <span class="submit-hero-sub">Use quando o grupo chegar a um consenso</span>
+          </button>
         </div>
-        <div class="chat-send-row" id="chatSendRow">
-          <select id="chatToSel" class="chat-to"></select>
-          <input type="text" id="chatInp" class="chat-inp"
-                 placeholder="Digite sua mensagem..." maxlength="300"
-                 onkeydown="if(event.key==='Enter')sendMsg()">
-          <button class="btn btn-primary btn-sm" onclick="sendMsg()">Enviar</button>
+
+        <section class="card answer-panel" id="answerPanel" hidden aria-labelledby="ansTitle">
+          <h2 class="card-title" id="ansTitle">Qual símbolo aparece em todas as folhas?</h2>
+          <p class="muted small" style="margin-bottom:12px">A resposta não pode ser alterada depois de enviada. Você ainda pode usar a conversa antes de confirmar.</p>
+          <div class="sym-grid answer-grid" id="answerGrid" role="radiogroup" aria-labelledby="ansTitle"></div>
+          <p class="answer-info" id="answerInfo" aria-live="polite"></p>
+          <div class="row-btns">
+            <button class="btn btn-outline" type="button" onclick="closeAnswerPanel()">Cancelar</button>
+            <button class="btn btn-green" type="button" id="btnConfirm" onclick="confirmAnswer()" disabled>Confirmar resposta</button>
+          </div>
+        </section>
+
+        <section class="card" id="parSymCard" aria-labelledby="symTitle">
+          <h2 class="card-title" id="symTitle">Sua folha de símbolos</h2>
+          <div class="sym-grid" id="parSymGrid"></div>
+          <p class="sym-hint">Descreva seus símbolos por mensagem. Não mostre sua tela para outras pessoas.</p>
+        </section>
+
+        <div class="game-tabs" role="tablist" aria-label="Seções da dinâmica">
+          <button type="button" role="tab" id="tabChat" aria-selected="true" onclick="setGameTab('chat')">Conversa<span class="tab-badge" id="tabUnread" hidden>0</span></button>
+          <button type="button" role="tab" id="tabMap" aria-selected="false" onclick="setGameTab('map')">Mapa da cabine</button>
         </div>
+
+        <section class="card" id="parChatCard" aria-labelledby="chatTitle">
+          <h2 class="card-title" id="chatTitle">Conversa</h2>
+          <div class="chat-area" id="parChat" role="log" aria-live="polite" aria-relevant="additions">
+            <div class="chat-empty" id="parChatEmpty">Nenhuma mensagem ainda. Escolha com quem falar e envie a primeira.</div>
+          </div>
+          <div class="chat-compose" id="chatSendRow">
+            <div class="to-row">
+              <span class="to-label" id="toLabel">Para</span>
+              <div class="to-chips" id="chatToChips" role="radiogroup" aria-labelledby="toLabel"></div>
+            </div>
+            <select id="chatToSel" hidden aria-hidden="true"></select>
+            <form class="send-row" onsubmit="sendMsg(); return false;">
+              <label class="sr-only" for="chatInp">Mensagem</label>
+              <input type="text" id="chatInp" class="chat-inp" placeholder="Digite sua mensagem..." maxlength="300" autocomplete="off" enterkeyhint="send">
+              <button class="btn btn-primary" type="submit">Enviar</button>
+            </form>
+          </div>
+          <p class="chat-readonly" id="chatReadonly" hidden>A dinâmica terminou. Esta é a conversa do seu grupo.</p>
+        </section>
       </div>
     </div>
-      </div>
-    </div>
-  </div>
+  </main>
 </div>
 
 <!-- ══════════════════════ FIREBASE + JS ══════════════════════ -->
@@ -835,6 +1007,12 @@ function initFirebase(mode) {
   const app = firebase.initializeApp(FIREBASE_CONFIG, mode === 'local' ? 'fac' : 'par');
   db   = app.database();
   auth = app.auth();
+  // Aviso de conexão: só aparece se a conexão cair depois de ter funcionado uma vez
+  let seen = false;
+  db.ref('.info/connected').on('value', s => {
+    const ok = s.val() === true; if (ok) seen = true;
+    const b = document.getElementById('connBanner'); if (b) b.hidden = ok || !seen;
+  });
 }
 
 let myUid = null;          // preenchido por ensureAuth() (login anônimo)
@@ -877,7 +1055,6 @@ let sessionCode = null;
 let planeList   = [];   // [{code, version, numParticipants, timerMinutes}, ...]
 let planeRefs   = {};   // code → Firebase ref
 let planeCache  = {};   // code → {state, parts, msgs:[]}
-let planeTimers = {};   // code → intervalId
 let planeRenderedKeys = {}; // code → Set of msg keys
 let activePlane = null; // code of currently viewed plane (null = overview)
 
@@ -909,6 +1086,7 @@ function showScreen(id) {
   if (document.getElementById(id).classList.contains('active')) return;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
 }
 function showErr(id, msg, dur=6000) {
   const el = document.getElementById(id); if (!el) return;
@@ -930,7 +1108,7 @@ function roleBadge(role) {
 }
 function symHtml(id) {
   const s = SYM[id] || {};
-  return `<div class="sym-card"><span>${esc(s.ch||'?')}</span><span class="sym-card-label">${esc(s.name||id)}</span></div>`;
+  return `<div class="sym-card" role="img" aria-label="${esc(s.name||id)}"><span aria-hidden="true">${esc(s.ch||'?')}</span><span class="sym-card-label" aria-hidden="true">${esc(s.name||id)}</span></div>`;
 }
 function seatCls(role) {
   if (role === 'A') return 'seat-A';
@@ -964,25 +1142,48 @@ function showJoinFor(code) {
   document.getElementById('codeInp').value = code;
   const badge = document.getElementById('parJoinRoomBadge');
   if (badge) badge.innerHTML =
-    `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted)">
-      <span style="font-family:Raleway,sans-serif;font-weight:800;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--navy)">SALA</span>
-      <span style="font-family:Raleway,sans-serif;font-weight:800;font-size:15px;letter-spacing:3px;color:var(--red)">${esc(code)}</span>
-    </div>`;
+    `<div class="join-room"><span>Sala</span><b>${esc(code)}</b></div>`;
   showScreen('s-par-join');
+  setTimeout(() => { const n = document.getElementById('nameInp'); if (n) n.focus({ preventScroll: true }); }, 50);
 }
 
 // ─────────────────────────────────────────── LINK HELPERS
 
 function parLink(code) { return `${location.origin}${location.pathname}?code=${code}`; }
-function copyLink(code, btnEl) {
-  navigator.clipboard.writeText(parLink(code)).then(() => {
-    const orig = btnEl.textContent;
-    btnEl.textContent = 'Copiado!';
-    setTimeout(() => { btnEl.textContent = orig; }, 2000);
-  }).catch(() => toast('Copie manualmente: ' + parLink(code), 5000));
-}
+// ─────────────────────────────────────────── FAC SETUP (seleção por botões)
 
-// ─────────────────────────────────────────── FAC SETUP → CREATE SESSION
+function initSetup() {
+  const defs = {
+    numPlanesSel: [1,2,3,4,5].map(n => [n, String(n)]),
+    numPartSel:   [6,7,8,9,10,11].map(n => [n, String(n)]),
+    timerMinInp:  [[10,'10 min'],[15,'15 min'],[20,'20 min'],[30,'30 min'],[0,'Sem cronômetro']],
+  };
+  document.querySelectorAll('.seg[data-for]').forEach(seg => {
+    const id = seg.dataset.for;
+    seg.innerHTML = defs[id].map(([v, l]) =>
+      `<button type="button" role="radio" data-v="${v}" aria-checked="false">${l}</button>`).join('');
+    seg.addEventListener('click', e => {
+      const b = e.target.closest('button[data-v]'); if (!b) return;
+      document.getElementById(id).value = b.dataset.v;
+      syncSetup();
+    });
+  });
+  document.getElementById('timerMinInp').addEventListener('input', syncSetup);
+  syncSetup();
+}
+function syncSetup() {
+  document.querySelectorAll('.seg[data-for]').forEach(seg => {
+    const v = String(document.getElementById(seg.dataset.for).value);
+    seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.v === v)));
+  });
+  const np = parseInt(document.getElementById('numPlanesSel').value) || 1;
+  const n  = parseInt(document.getElementById('numPartSel').value) || 6;
+  const t  = Math.min(90, Math.max(0, parseInt(document.getElementById('timerMinInp').value) || 0));
+  document.getElementById('setupSummary').textContent =
+    `${np} ${plural(np, 'avião', 'aviões')}, ${n} pessoas por avião` +
+    (np > 1 ? ` (${np * n} pessoas no total)` : '') + '. ' +
+    (t > 0 ? `Duração de ${t} minutos.` : 'Sem cronômetro.');
+}
 
 async function createSession() {
   if (isBusy) return; isBusy = true;
@@ -1073,6 +1274,7 @@ function facDiag(msg) {
 }
 
 function listenAllPlanes() {
+  startFacClock();
   planeList.forEach((p, i) => {
     const ref = db.ref(`aviao/${p.code}`);
     planeRefs[p.code] = ref;
@@ -1131,27 +1333,51 @@ function updateFacView() {
 
 // ─────────────────────────────────────────── LOBBY RENDER
 
+function copyText(text, btnEl) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btnEl.textContent;
+    btnEl.textContent = 'Copiado';
+    setTimeout(() => { btnEl.textContent = orig; }, 2000);
+  }).catch(() => toast('Copie manualmente: ' + text, 5000));
+}
+function copyLink(code, btnEl) { copyText(parLink(code), btnEl); }
+function copyCode(code, btnEl) { copyText(code, btnEl); }
+
+function plural(n, one, many) { return n === 1 ? one : many; }
+
 function lobbyRowHtml(p, i) {
-  const cache = planeCache[p.code] || {};
-  const parts = cache.parts || {};
-  const count = Object.keys(parts).length;
-  const sorted = Object.values(parts).sort((a,b) => (a.connectedAt||0)-(b.connectedAt||0));
+  const cache  = planeCache[p.code] || {};
+  const sorted = Object.values(cache.parts || {}).sort((a,b) => (a.connectedAt||0)-(b.connectedAt||0));
+  const count  = sorted.length;
+  const max    = p.numParticipants;
   const ready  = count >= MIN_PLAYERS;
-  const partial = ready && count < p.numParticipants;
-  return `<div class="plane-link-row">
-    <div class="plane-link-title">Avião ${i+1}</div>
-    <div class="plane-code-disp">${esc(p.code)}</div>
-    <div class="plane-link-url">${esc(parLink(p.code))}</div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
-      <button class="btn btn-outline btn-sm" onclick="copyLink('${esc(p.code)}',this)">Copiar link</button>
-      <span style="font-size:13px;color:var(--muted)">${count} / ${p.numParticipants} pessoa(s)</span>
-      <button class="btn btn-red btn-sm" ${ready?'':'disabled'} onclick="startPlane('${esc(p.code)}')">Iniciar Avião ${i+1}</button>
-      ${partial ? `<span style="font-size:12px;color:var(--muted)">Vai iniciar com ${count} de ${p.numParticipants} pessoas</span>` : ''}
+  const partial = ready && count < max;
+  const pct    = Math.min(100, Math.round(count / max * 100));
+  const minPct = Math.min(100, Math.round(MIN_PLAYERS / max * 100));
+  const missing = MIN_PLAYERS - count;
+  const hint = ready
+    ? (partial ? `Vai iniciar com ${count} de ${max} pessoas.` : 'Sala completa. Pronto para iniciar.')
+    : `Faltam ${missing} ${plural(missing, 'pessoa', 'pessoas')} para o mínimo de ${MIN_PLAYERS}.`;
+  const c = esc(p.code);
+  return `<article class="card plane-card">
+    <div class="plane-head"><h3>Avião ${i+1}</h3><span class="chip chip-info">Aguardando início</span></div>
+    <div class="code-big plane-code-disp" aria-label="Código da sala: ${esc(p.code.split('').join(' '))}">${c}</div>
+    <div class="plane-actions">
+      <button class="btn btn-outline btn-sm" onclick="copyLink('${c}',this)">Copiar link</button>
+      <button class="btn btn-outline btn-sm" onclick="copyCode('${c}',this)">Copiar código</button>
     </div>
-    ${sorted.length > 0
-      ? `<div style="margin-top:8px;font-size:12px;color:var(--muted)">${sorted.map(x => esc(x.name)).join(', ')}</div>`
-      : `<div style="margin-top:8px;font-size:12px;color:var(--muted)">Aguardando participantes...</div>`}
-  </div>`;
+    <div class="progress">
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${count}" aria-label="Pessoas na sala">
+        <span style="width:${pct}%"></span><i style="left:calc(${minPct}% - 1px)" title="Mínimo para iniciar"></i>
+      </div>
+      <p><b>${count} de ${max} pessoas</b> na sala (mínimo ${MIN_PLAYERS})</p>
+    </div>
+    ${sorted.length
+      ? `<ul class="chips">${sorted.map(x => `<li><span class="dot-online"></span>${esc(x.name)}</li>`).join('')}</ul>`
+      : `<ul class="chips"><li class="empty" style="background:none;border:none;padding:0;font-weight:400;color:var(--muted)">Aguardando pessoas entrarem...</li></ul>`}
+    <button class="btn btn-primary btn-full" ${ready ? '' : 'disabled'} onclick="startPlane('${c}')">Iniciar Avião ${i+1}</button>
+    <p class="hint">${hint}</p>
+  </article>`;
 }
 
 function renderLobbyPlanes() {
@@ -1207,11 +1433,12 @@ async function startPlane(code) {
 
 function renderFacTabs() {
   document.getElementById('facTabBar').innerHTML = [
-    `<button class="tab-btn ${activePlane===null?'active':''}" onclick="setActivePlane(null)">Visão geral</button>`,
+    `<button class="tab-btn ${activePlane===null?'active':''}" role="tab" aria-selected="${activePlane===null}" onclick="setActivePlane(null)">Visão geral</button>`,
     ...planeList.map((p, i) => {
       const st = planeCache[p.code]?.state?.phase || 'lobby';
-      return `<button class="tab-btn ${activePlane===p.code?'active':''}" onclick="setActivePlane('${esc(p.code)}')">
-        Avião ${i+1}<span class="sdot sdot-${st}"></span>
+      const on = activePlane === p.code;
+      return `<button class="tab-btn ${on?'active':''}" role="tab" aria-selected="${on}" onclick="setActivePlane('${esc(p.code)}')">
+        Avião ${i+1}<span class="sdot sdot-${st}" aria-hidden="true"></span>
       </button>`;
     })
   ].join('');
@@ -1223,132 +1450,140 @@ function setActivePlane(code) {
   renderActivePlane();
 }
 
+const PHASE_LABEL = { lobby:'Aguardando início', playing:'Em andamento', ended:'Encerrado' };
+
 // ─────────────────────────────────────────── RENDER ACTIVE PLANE
 
 function renderActivePlane() {
   const content = document.getElementById('facPlaneContent');
 
-  // ── Overview tab ──
+  // ── Visão geral ──
   if (activePlane === null) {
-    const waiting = planeList.map((p, i) => ({p, i}))
-      .filter(x => (planeCache[x.p.code]?.state?.phase || 'lobby') === 'lobby');
+    const phases = planeList.map(p => planeCache[p.code]?.state?.phase || 'lobby');
+    const nPlay = phases.filter(x => x === 'playing').length;
+    const nEnd  = phases.filter(x => x === 'ended').length;
+    const nWait = phases.filter(x => x === 'lobby').length;
+    const stats = `<div class="overview-summary">
+      <div class="stat"><b>${nPlay}</b><span>Em andamento</span></div>
+      <div class="stat"><b>${nEnd}</b><span>Encerrados</span></div>
+      <div class="stat"><b>${nWait}</b><span>Aguardando início</span></div>
+    </div>`;
+
+    const waiting = planeList.map((p, i) => ({p, i})).filter(x => phases[x.i] === 'lobby');
     const waitHtml = waiting.length
-      ? `<div class="card-title" style="margin:4px 0 8px">Aguardando início</div>${waiting.map(x => lobbyRowHtml(x.p, x.i)).join('')}`
+      ? `<h2 class="card-title" style="margin:4px 0 10px">Aguardando início</h2><div class="lobby-grid" style="margin-bottom:22px">${waiting.map(x => lobbyRowHtml(x.p, x.i)).join('')}</div>`
       : '';
-    content.innerHTML = waitHtml + `<div class="overview-grid">${
-      planeList.map((p, i) => {
-        if ((planeCache[p.code]?.state?.phase || 'lobby') === 'lobby') return '';
-        const cache  = planeCache[p.code] || {};
-        const st     = cache.state?.phase || 'lobby';
-        const count  = Object.keys(cache.parts||{}).length;
-        const ansId  = cache.state?.answer;
-        const ansSym = ansId ? SYM[ansId] : null;
-        return `<div class="overview-card" onclick="setActivePlane('${esc(p.code)}')">
-          <div class="overview-card-title">Avião ${i+1}<span class="sdot sdot-${st}" style="margin-left:8px"></span></div>
-          <div class="overview-card-meta">${count} / ${p.numParticipants} pessoas</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:4px">${
-            st==='lobby' ? 'Aguardando' : st==='playing' ? 'Em andamento' : 'Encerrado'
-          }</div>
-          ${ansSym ? `<div style="font-size:24px;margin-top:6px;color:var(--red)">${esc(ansSym.ch)} <span style="font-size:12px;color:${cache.state?.correct?'var(--green)':'var(--danger)'}">${cache.state?.correct?'Correto':'Incorreto'}</span></div>` : ''}
-        </div>`;
-      }).join('')
-    }</div>`;
+
+    const started = planeList.map((p, i) => {
+      const st = phases[i];
+      if (st === 'lobby') return '';
+      const cache  = planeCache[p.code] || {};
+      const count  = Object.keys(cache.parts || {}).length;
+      const ansSym = cache.state?.answer ? SYM[cache.state.answer] : null;
+      const chipCls = st === 'playing' ? 'chip-playing' : 'chip-ended';
+      return `<button class="overview-card" onclick="setActivePlane('${esc(p.code)}')">
+        <div class="overview-card-top"><span class="overview-card-title">Avião ${i+1}</span><span class="chip ${chipCls}">${PHASE_LABEL[st]}</span></div>
+        <div class="overview-card-meta">${count} de ${p.numParticipants} pessoas</div>
+        ${ansSym ? `<div class="overview-answer"><span class="glyph" aria-hidden="true">${esc(ansSym.ch)}</span>
+          <span class="chip ${cache.state.correct ? 'chip-ok' : 'chip-err'}">${cache.state.correct ? 'Resposta correta' : 'Resposta incorreta'}</span></div>` : ''}
+      </button>`;
+    }).join('');
+
+    content.innerHTML = stats + waitHtml + (started ? `<div class="overview-grid">${started}</div>` : '');
     return;
   }
 
-  // ── Individual plane tab ──
+  // ── Detalhe de um avião ──
   const p     = planeList.find(pl => pl.code === activePlane);
   const cache = planeCache[activePlane] || {};
   const state = cache.state || {};
   const parts = cache.parts || {};
-  const idx   = planeList.indexOf(p);
   if (!p) { content.innerHTML = ''; return; }
-  if ((state.phase || 'lobby') === 'lobby') { content.innerHTML = lobbyRowHtml(p, idx); return; }
+  const idx   = planeList.indexOf(p);
+  const phase = state.phase || 'lobby';
+  if (phase === 'lobby') { content.innerHTML = `<div class="lobby-grid">${lobbyRowHtml(p, idx)}</div>`; return; }
+  const code   = esc(activePlane);
   const parArr = Object.entries(parts).sort(([,a],[,b]) => (a.connectedAt||0)-(b.connectedAt||0));
 
-  // Role maps for this plane
-  const uToN = {};
-  parArr.forEach(([uid, pr]) => { uToN[uid] = pr.name||'?'; });
-
-  let html = '';
-
-  // Timer
-  if (state.timerEnd) {
-    html += `<div class="card"><div id="fac-timer-${activePlane}" class="timer-big">--:--</div><div class="timer-lbl">Em andamento</div></div>`;
+  // Estado e controles (no alto, sempre à vista)
+  let controls;
+  if (phase === 'playing') {
+    controls = endConfirm[activePlane]
+      ? `<div class="confirm-box">
+           <p><strong>Encerrar este avião agora?</strong> O grupo não verá o resultado até você revelar.</p>
+           <div class="row-btns">
+             <button class="btn btn-solid-danger" onclick="endPlane('${code}')">Sim, encerrar</button>
+             <button class="btn btn-outline" onclick="askEnd('${code}', false)">Cancelar</button>
+           </div>
+         </div>`
+      : `<button class="btn btn-danger btn-full" onclick="askEnd('${code}', true)">Encerrar avião</button>`;
+  } else if (!state.revealed) {
+    controls = `<p class="status-note">O avião está encerrado e o grupo ainda não vê o resultado. Libere quando terminar o debriefing.</p>
+      <button class="btn btn-primary btn-full" onclick="facRevealPlane('${code}')">Revelar resultado ao grupo</button>`;
+  } else {
+    controls = `<p class="status-note" style="margin:0">Resultado revelado ao grupo.</p>`;
   }
-
-  // Submitted answer
-  if (state.answer) {
-    const sym = SYM[state.answer];
-    html += `<div class="card">
-      <div class="card-title">Resposta submetida</div>
-      <div style="text-align:center">
-        <div style="font-size:52px;color:var(--red);margin:4px">${esc(sym?.ch||'?')}</div>
-        <div class="${state.correct?'result-ok':'result-err'}">
-          ${state.correct ? 'CORRETO' : 'INCORRETO'}
-          — submetido por ${esc(ROLE_LABEL[state.answeredBy]||state.answeredBy||'?')}
-        </div>
-      </div>
-    </div>`;
-  }
-
-  // Participants
-  html += `<div class="card">
-    <div class="card-title">Participantes — Avião ${idx+1}</div>
-    <div class="par-list">${parArr.map(([,pr]) => `
-      <div class="par-item">
-        <div class="dot-online" ${pr.online === false ? 'style="background:var(--border)" title="Sem conexão"' : ''}></div>
-        <div class="par-name">${esc(pr.name||'?')}</div>
-        ${pr.role ? `<div>${roleBadge(pr.role)}</div>` : ''}
-      </div>`).join('')}
+  const statusCard = `<section class="card status-card">
+    <div class="status-top">
+      <span class="chip ${phase === 'playing' ? 'chip-playing' : 'chip-ended'}">${PHASE_LABEL[phase]}</span>
+      ${phase === 'playing' && state.timerEnd ? `<div id="fac-timer-${code}" class="timer-big timer-md" aria-label="Tempo restante">--:--</div>` : ''}
     </div>
-  </div>`;
+    ${controls}
+  </section>`;
 
-  // Messages
-  html += `<div class="card">
-    <div class="card-title">Mensagens — Avião ${idx+1}</div>
-    <div class="chat-area" id="fac-mon-${activePlane}">
+  // Pessoas
+  const peopleCard = `<section class="card">
+    <h2 class="card-title">Pessoas no avião <span class="count">${parArr.length}</span></h2>
+    <ul class="par-grid">${parArr.map(([,pr]) => `
+      <li>
+        <span class="dot-online ${pr.online === false ? 'dot-off' : ''}" title="${pr.online === false ? 'Sem conexão' : 'Conectada'}"></span>
+        <span class="par-name">${esc(pr.name||'?')}</span>
+        ${pr.online === false ? '<span class="par-off">sem conexão</span>' : ''}
+        ${pr.role ? roleBadge(pr.role) : ''}
+      </li>`).join('')}
+    </ul>
+  </section>`;
+
+  // Resposta e gabarito
+  let resultCard = '';
+  if (state.answer || phase === 'ended') {
+    const sym = state.answer ? SYM[state.answer] : null;
+    const correctSym = SYM[PLANE_VERSIONS[p.version]?.answer];
+    const left = state.answer
+      ? `<div class="result-box">
+          <div class="result-label">Resposta do grupo</div>
+          <div class="result-glyph" aria-hidden="true">${esc(sym?.ch||'?')}</div>
+          <div class="result-name">${esc(sym?.name||'')}</div>
+          <span class="chip ${state.correct ? 'chip-ok' : 'chip-err'}">${state.correct ? 'Resposta correta' : 'Resposta incorreta'}</span>
+          <div class="small muted" style="margin-top:8px">Enviada por ${esc(ROLE_LABEL[state.answeredBy]||state.answeredBy||'?')}</div>
+        </div>`
+      : `<div class="result-box"><div class="result-label">Resposta do grupo</div><p class="muted" style="margin-top:14px">Nenhuma resposta foi enviada.</p></div>`;
+    const right = phase === 'ended'
+      ? `<div class="result-box">
+          <div class="result-label">Símbolo que estava em todas as folhas</div>
+          <div class="result-glyph" aria-hidden="true">${esc(correctSym?.ch||'?')}</div>
+          <div class="result-name">${esc(correctSym?.name||'')}</div>
+        </div>`
+      : '';
+    resultCard = `<section class="card"><h2 class="card-title">Resultado</h2><div class="result-pair">${left}${right}</div></section>`;
+  }
+
+  // Mensagens
+  const msgCard = `<section class="card">
+    <h2 class="card-title">Mensagens <span class="count">${cache.msgs.length}</span></h2>
+    <div class="chat-area mon-feed" id="fac-mon-${code}" role="log" aria-live="polite">
       <div class="chat-empty">Nenhuma mensagem ainda.</div>
     </div>
+  </section>`;
+
+  content.innerHTML = `<div class="mon-grid">
+    <aside class="mon-side">${statusCard}${peopleCard}</aside>
+    <div class="mon-main">${resultCard}${msgCard}</div>
   </div>`;
 
-  // Controls
-  if (state.phase !== 'ended') {
-    html += `<div class="card"><div class="row-btns">
-      <button class="btn btn-danger" onclick="endPlane('${esc(activePlane)}')">Encerrar avião</button>
-    </div></div>`;
-  } else if (!state.revealed) {
-    html += `<div class="card">
-      <p style="font-size:14px;margin-bottom:10px">O avião está encerrado. O grupo ainda não vê o resultado. Libere quando terminar o debriefing.</p>
-      <div class="row-btns"><button class="btn btn-red" onclick="facRevealPlane('${esc(activePlane)}')">Revelar resultado ao grupo</button></div>
-    </div>`;
-  } else {
-    html += `<div class="card"><p style="font-size:14px">Resultado revelado ao grupo.</p></div>`;
-  }
+  facClockTick();
 
-  // Result card (ended)
-  if (state.phase === 'ended') {
-    const correctAns = PLANE_VERSIONS[p.version]?.answer;
-    const correctSym = SYM[correctAns];
-    html += `<div class="card">
-      <div class="card-title">Resultado final</div>
-      <div class="result-box">
-        <div style="font-size:13px;color:var(--muted);margin-bottom:4px">Símbolo que estava em todas as folhas:</div>
-        <div style="font-size:64px;font-weight:900;color:var(--red)">${esc(correctSym?.ch||'?')}</div>
-        <div style="font-size:14px;color:var(--muted);margin-bottom:10px">${esc(correctSym?.name||'')}</div>
-        ${state.answer
-          ? `<div class="${state.correct?'result-ok':'result-err'}">${state.correct?'O grupo acertou!':'O grupo errou.'}</div>`
-          : `<div class="result-err">Encerrado sem resposta submetida.</div>`}
-      </div>
-    </div>`;
-  }
-
-  content.innerHTML = html;
-
-  // Render timer if needed
-  if (state.timerEnd) setPlaneTimer(activePlane, state.timerEnd);
-
-  // Replay cached messages
+  // Reexibe as mensagens já recebidas
   const mon = document.getElementById(`fac-mon-${activePlane}`);
   if (mon && cache.msgs.length > 0) {
     mon.innerHTML = '';
@@ -1360,43 +1595,45 @@ function appendFacMsgTo(el, msg) {
   const emp = el.querySelector('.chat-empty');
   if (emp) emp.remove();
   const ts = new Date(msg.ts||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  const fromName = msg.fromName || '?';
   const row = document.createElement('div');
   row.className = 'mon-row';
   row.innerHTML = `
     <span class="mon-time">${ts}</span>
-    <span class="mon-from">${roleBadge(msg.fromRole)}&thinsp;${esc(fromName)}</span>
-    <span class="mon-arr">→</span>
-    <span class="mon-to">${roleBadge(msg.toRole)}</span>
+    <span class="mon-flow">${roleBadge(msg.fromRole)}<span class="mon-from-name">${esc(msg.fromName || '?')}</span><span class="mon-arr" aria-label="para">→</span>${roleBadge(msg.toRole)}</span>
     <span class="mon-text">${esc(msg.text)}</span>`;
   el.appendChild(row);
   el.scrollTop = el.scrollHeight;
 }
 
+// Relógio da facilitação: roda para todos os aviões, mesmo com outra aba aberta,
+// para o encerramento automático e os avisos de tempo não dependerem da tela.
 const planeAutoEnded = {};
-function setPlaneTimer(code, endTs) {
-  if (planeTimers[code]) clearInterval(planeTimers[code]);
-  let prev = endTs - now();
-  function tick() {
-    const el = document.getElementById(`fac-timer-${code}`);
-    if (!el) { clearInterval(planeTimers[code]); return; }
-    const rem = endTs - now();
-    el.textContent = fmtTime(rem);
-    el.className = 'timer-big' + (rem < 60000 ? ' end' : rem < 180000 ? ' warn' : '');
-    warnTime(prev, rem, `Avião ${planeList.findIndex(p => p.code === code)+1}: `);
-    prev = rem;
-    if (rem <= 0) {
-      clearInterval(planeTimers[code]);
-      // O tempo acabou: a facilitação encerra o avião (sem revelar o resultado)
-      const ph = planeCache[code]?.state?.phase;
-      if (ph === 'playing' && !planeAutoEnded[code]) {
-        planeAutoEnded[code] = true;
-        db.ref(`aviao/${code}/state/phase`).set('ended').catch(e => { planeAutoEnded[code] = false; console.error(e); });
-      }
+const planePrevRem = {};
+let facClock = null;
+function facClockTick() {
+  planeList.forEach((p, i) => {
+    const st = planeCache[p.code]?.state || {};
+    if (st.phase !== 'playing' || !st.timerEnd) return;
+    const rem = st.timerEnd - now();
+    const el = document.getElementById(`fac-timer-${p.code}`);
+    if (el) {
+      el.textContent = fmtTime(rem);
+      el.className = 'timer-big timer-md' + (rem < 60000 ? ' end' : rem < 180000 ? ' warn' : '');
     }
-  }
-  tick();
-  planeTimers[code] = setInterval(tick, 500);
+    const prev = planePrevRem[p.code] ?? rem;
+    warnTime(prev, rem, `Avião ${i+1}: `);
+    planePrevRem[p.code] = rem;
+    if (rem <= 0 && !planeAutoEnded[p.code]) {
+      // O tempo acabou: a facilitação encerra o avião (sem revelar o resultado)
+      planeAutoEnded[p.code] = true;
+      db.ref(`aviao/${p.code}/state/phase`).set('ended')
+        .catch(e => { planeAutoEnded[p.code] = false; console.error(e); });
+    }
+  });
+}
+function startFacClock() {
+  if (facClock) return;
+  facClock = setInterval(facClockTick, 500);
 }
 
 // Avisos de tempo (10 e 5 minutos), como no roteiro original
@@ -1411,9 +1648,13 @@ async function facRevealPlane(code) {
   try { await db.ref(`aviao/${code}/state/revealed`).set(true); }
   catch(e) { toast(connErr(e)); }
 }
+const endConfirm = {};
+function askEnd(code, on) {
+  endConfirm[code] = !!on;
+  renderActivePlane();
+}
 async function endPlane(code) {
-  if (!confirm('Encerrar este avião agora? O grupo não verá o resultado até você revelar.')) return;
-  if (planeTimers[code]) clearInterval(planeTimers[code]);
+  endConfirm[code] = false;
   try { await db.ref(`aviao/${code}/state/phase`).set('ended'); }
   catch(e) { toast(connErr(e)); }
 }
@@ -1428,7 +1669,7 @@ async function joinRoom() {
   const code = document.getElementById('codeInp').value.trim().toUpperCase();
   const name = document.getElementById('nameInp').value.trim();
   if (!code || code.length !== 4) { joinFail('Link inválido ou expirado. Peça um novo link à pessoa facilitadora.'); return; }
-  if (!name) { joinFail('Digite seu nome.'); return; }
+  if (!name) { joinFail('Digite seu nome para entrar.'); return; }
 
   try {
     await ensureAuth();
@@ -1463,6 +1704,7 @@ async function joinRoom() {
   }
 
   isBusy = false;
+  document.getElementById('parRoleHdr').textContent = myPRole ? (ROLE_LABEL[myPRole] || myPRole) : `Sala ${roomCode}`;
   showScreen('s-par-game');
   listenRoom();
 }
@@ -1509,24 +1751,71 @@ function joinFail(msg) {
 
 // ─────────────────────────────────────────── MESSAGING
 
+let unreadBy = {};        // role → mensagens não lidas daquela pessoa
+let gameTab = 'chat';     // aba visível em telas estreitas
+let tabUnread = 0;
+
 function buildToSelect() {
   const targets = getTargets(myPRole, allRoles);
   const sel = document.getElementById('chatToSel');
   const opts = targets.map(r => {
     const uid  = roleToUid[r];
     const name = uid ? uidToName[uid] : '';
-    return { r, lbl: name ? `${ROLE_LABEL[r]||r} · ${name}` : (ROLE_LABEL[r]||r) };
+    return { r, name, lbl: name ? `${ROLE_LABEL[r]||r} · ${name}` : (ROLE_LABEL[r]||r) };
   });
   const sig = JSON.stringify(opts);
-  if (sel.dataset.sig === sig) return;           // nada mudou: não mexe no campo
+  if (sel.dataset.sig === sig) return;           // nada mudou: não mexe nos campos
   const keep = sel.value;
   sel.innerHTML = opts.map(o => `<option value="${esc(o.r)}">${esc(o.lbl)}</option>`).join('');
   sel.dataset.sig = sig;
   if (keep && targets.includes(keep)) sel.value = keep;
+  renderToChips(opts);
+}
+
+function renderToChips(opts) {
+  const sel = document.getElementById('chatToSel');
+  document.getElementById('chatToChips').innerHTML = (opts || []).map(o => {
+    const n = unreadBy[o.r] || 0;
+    return `<button type="button" class="to-chip" role="radio" data-role="${esc(o.r)}"
+        aria-checked="${o.r === sel.value}" aria-label="${esc(o.lbl)}" onclick="pickTo('${esc(o.r)}')">
+      ${esc(o.r)}${o.name ? `<small>${esc(o.name)}</small>` : ''}
+      <span class="unread" ${n ? '' : 'hidden'}>${n}</span>
+    </button>`;
+  }).join('');
+}
+
+function pickTo(role) {
+  const sel = document.getElementById('chatToSel');
+  sel.value = role;
+  unreadBy[role] = 0;
+  document.querySelectorAll('#chatToChips .to-chip').forEach(b => {
+    const on = b.dataset.role === role;
+    b.setAttribute('aria-checked', String(on));
+    const u = b.querySelector('.unread'); if (u && on) u.hidden = true;
+  });
+  document.getElementById('chatInp').focus();
+}
+
+function setGameTab(tab) {
+  gameTab = tab;
+  document.getElementById('pp-game').dataset.tab = tab;
+  document.getElementById('tabChat').setAttribute('aria-selected', String(tab === 'chat'));
+  document.getElementById('tabMap').setAttribute('aria-selected', String(tab === 'map'));
+  if (tab === 'chat') {
+    tabUnread = 0; updateTabBadge();
+    const chat = document.getElementById('parChat'); chat.scrollTop = chat.scrollHeight;
+  } else if (lastCabinParts) {
+    renderCabin(lastCabinParts);     // o mapa estava oculto: recalcula o enquadramento
+  }
+}
+function updateTabBadge() {
+  const b = document.getElementById('tabUnread');
+  b.textContent = tabUnread; b.hidden = tabUnread === 0;
 }
 
 function sendMsg() {
-  const text   = document.getElementById('chatInp').value.trim();
+  const inp    = document.getElementById('chatInp');
+  const text   = inp.value.trim();
   const toRole = document.getElementById('chatToSel').value;
   if (!text || !toRole || !roomRef || !myPRole) return;
   if (!getTargets(myPRole, allRoles).includes(toRole)) {
@@ -1541,40 +1830,52 @@ function sendMsg() {
     const denied = e && (e.code === 'PERMISSION_DENIED' || /permission_denied/i.test(e.message||''));
     toast(denied ? 'Mensagem recusada pelas regras do avião.' : connErr(e));
   });
-  document.getElementById('chatInp').value = '';
+  inp.value = '';
+  inp.focus();
 }
 
-// ─────────────────────────────────────────── ANSWER MODAL
+// ─────────────────────────────────────────── ANSWER PANEL
 
-function openAnswerModal() {
+let answerOpen = false;
+
+function openAnswerPanel() {
   selectedAns = null;
+  answerOpen = true;
   document.getElementById('answerGrid').innerHTML = SYMBOLS.map(s => `
-    <div class="sym-card pickable" id="as-${s.id}" onclick="pickAns('${s.id}',this)">
-      <span>${esc(s.ch)}</span>
+    <button type="button" class="sym-card pickable" role="radio" aria-checked="false" id="as-${s.id}"
+            aria-label="${esc(s.name)}" onclick="pickAns('${s.id}',this)">
+      <span aria-hidden="true">${esc(s.ch)}</span>
       <span class="sym-card-label">${esc(s.name)}</span>
-    </div>`).join('');
+    </button>`).join('');
   document.getElementById('answerInfo').textContent = '';
   document.getElementById('btnConfirm').disabled = true;
-  document.getElementById('answerModal').classList.add('open');
+  document.getElementById('parSubmitWrap').style.display = 'none';
+  const panel = document.getElementById('answerPanel');
+  panel.hidden = false;
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  const first = document.querySelector('#answerGrid .sym-card'); if (first) first.focus({ preventScroll: true });
 }
-function closeAnswerModal() {
-  document.getElementById('answerModal').classList.remove('open');
+function closeAnswerPanel() {
+  answerOpen = false;
   selectedAns = null;
+  document.getElementById('answerPanel').hidden = true;
+  if (lastState.phase === 'playing' && myPRole === 'A') document.getElementById('parSubmitWrap').style.display = 'block';
 }
 function pickAns(id, el) {
-  document.querySelectorAll('#answerGrid .sym-card').forEach(c => c.classList.remove('picked'));
-  el.classList.add('picked');
+  document.querySelectorAll('#answerGrid .sym-card').forEach(c => { c.classList.remove('picked'); c.setAttribute('aria-checked', 'false'); });
+  el.classList.add('picked'); el.setAttribute('aria-checked', 'true');
   selectedAns = id;
   const s = SYM[id];
-  document.getElementById('answerInfo').textContent =
-    `Selecionado: ${s?.ch||'?'} — ${s?.name||id}`;
+  document.getElementById('answerInfo').textContent = `Selecionado: ${s?.ch||'?'} (${s?.name||id})`;
   document.getElementById('btnConfirm').disabled = false;
 }
 async function confirmAnswer() {
   if (!selectedAns || isBusy) return;
-  if (lastState.phase !== 'playing') { toast('A dinâmica não está em andamento.'); closeAnswerModal(); return; }
-  if (myPRole !== 'A') { toast('Apenas a Pessoa A submete a resposta final.'); return; }
+  if (lastState.phase !== 'playing') { toast('A dinâmica não está em andamento.'); closeAnswerPanel(); return; }
+  if (myPRole !== 'A') { toast('Apenas a Pessoa A envia a resposta final.'); return; }
   isBusy = true;
+  const btn = document.getElementById('btnConfirm');
+  btn.disabled = true; btn.textContent = 'Enviando...';
   try {
     const correctAns = PLANE_VERSIONS[cfgPlaneVersion]?.answer || 'amp';
     await roomRef.update({
@@ -1583,13 +1884,14 @@ async function confirmAnswer() {
       'state/answeredBy': myPRole,
       'state/phase':      'ended',
     });
-    closeAnswerModal();
+    closeAnswerPanel();
   } catch(e) {
     const denied = e && (e.code === 'PERMISSION_DENIED' || /permission_denied/i.test(e.message||''));
     toast(denied ? 'A resposta já foi enviada ou a dinâmica foi encerrada.' : connErr(e));
-    closeAnswerModal();
+    closeAnswerPanel();
   } finally {
     isBusy = false;
+    btn.textContent = 'Confirmar resposta';
   }
 }
 
@@ -1659,27 +1961,34 @@ function handlePar(state, parts) {
   const phase = state.phase || 'lobby';
   const me    = parts[myUid] || {};
 
-  // First-time role assignment
+  // Primeira atribuição de papel
   if (me.role && !myPRole) {
     myPRole = me.role;
-    document.getElementById('parRoleHdr').textContent = ROLE_LABEL[myPRole] || myPRole;
     attachMsgListeners();
   }
+  document.getElementById('parRoleHdr').textContent =
+    myPRole ? (ROLE_LABEL[myPRole] || myPRole) : `Sala ${roomCode || ''}`.trim();
 
   if (phase === 'lobby') {
     document.getElementById('pp-lobby').style.display = 'block';
     document.getElementById('pp-game').style.display  = 'none';
+    const names = Object.values(parts).sort((a,b) => (a.connectedAt||0)-(b.connectedAt||0)).map(x => x.name || '?');
+    document.getElementById('parLobbyCount').textContent = names.length;
+    document.getElementById('parLobbyMax').textContent   = cfgNumPart;
+    document.getElementById('parLobbyList').innerHTML    =
+      names.map(n => `<li><span class="dot-online"></span>${esc(n)}</li>`).join('');
     if (me.role) {
-      document.getElementById('parLobbyRoleInfo').innerHTML =
-        `Seu papel: ${roleBadge(me.role)}`;
+      document.getElementById('parLobbyRoleInfo').innerHTML = `Seu papel: ${roleBadge(me.role)}`;
     }
     return;
   }
 
   document.getElementById('pp-lobby').style.display = 'none';
-  document.getElementById('pp-game').style.display  = 'block';
+  const ppGame = document.getElementById('pp-game');
+  ppGame.style.display = 'block';
+  ppGame.classList.toggle('is-ended', phase === 'ended');
 
-  // O jogo começou: quem cair agora continua com papel e folha (P0-2)
+  // O jogo começou: quem cair agora continua com papel e folha
   if (presenceMode === 'lobby' && me.role && roomRef) {
     const meRef = roomRef.child(`participants/${myUid}`);
     meRef.onDisconnect().cancel()
@@ -1688,65 +1997,80 @@ function handlePar(state, parts) {
     presenceMode = 'game';
   }
 
-  // Briefing da Pessoa A (P0-1)
+  // Cartão do papel: quem sou e com quem posso falar
+  const roleCard = document.getElementById('parRoleCard');
+  if (myPRole && phase === 'playing') {
+    roleCard.style.display = 'block';
+    document.getElementById('parRoleAvatar').textContent = myPRole;
+    document.getElementById('parRoleTitle').textContent  = `Você é a ${ROLE_LABEL[myPRole] || myPRole}`;
+    document.getElementById('parRulesBanner').innerHTML  = buildRulesHtml(myPRole);
+  } else {
+    roleCard.style.display = 'none';
+  }
   const brief = document.getElementById('parBriefing');
   if (brief) brief.style.display = (myPRole === 'A' && phase === 'playing') ? 'block' : 'none';
 
-  // Symbols (render once)
+  // Folha de símbolos (desenha uma vez)
   if (mySymbols && document.getElementById('parSymGrid').childElementCount === 0) {
     document.getElementById('parSymGrid').innerHTML = mySymbols.map(symHtml).join('');
   }
 
-  // Cabin visual (re-render on each state update to reflect who's connected)
+  // Mapa da cabine (redesenha a cada atualização para refletir quem está conectado)
   if (myPRole) renderCabin(parts);
 
-  // Rules banner
-  const banner = document.getElementById('parRulesBanner');
-  banner.style.display = 'block';
-  banner.innerHTML = buildRulesHtml(myPRole);
-
-  // Target select
+  // Destinatários da conversa
   buildToSelect();
 
-  // Timer
-  startTimer(state.timerEnd, 'parTimerDisp', 'parTimerLbl', 'parTimerCard');
+  // Cronômetro
+  const tCard = document.getElementById('parTimerCard');
+  if (phase === 'playing') {
+    startTimer(state.timerEnd, 'parTimerDisp', 'parTimerLbl', 'parTimerCard');
+  } else {
+    clearInterval(timerIntvl); timerIntvl = null; timerEndShown = null;
+    if (state.timerEnd) {
+      tCard.style.display = 'block';
+      const d = document.getElementById('parTimerDisp');
+      d.textContent = 'Encerrado'; d.className = 'timer-big';
+    } else tCard.style.display = 'none';
+  }
 
-  // Submit CTA — somente a Pessoa A
+  // Envio da resposta final: somente a Pessoa A
   document.getElementById('parSubmitWrap').style.display =
-    (phase === 'playing' && myPRole === 'A') ? 'block' : 'none';
+    (phase === 'playing' && myPRole === 'A' && !answerOpen) ? 'block' : 'none';
 
   if (phase === 'ended') {
-    clearInterval(timerIntvl); timerIntvl = null;
-    document.getElementById('chatSendRow').style.display   = 'none';
-    document.getElementById('parSymCard').style.display    = 'none';
-    document.getElementById('parRulesBanner').style.display= 'none';
-    if (brief) brief.style.display = 'none';
-    document.getElementById('parCabinWrap').style.display  = 'none';
-    document.getElementById('parSubmitWrap').style.display = 'none';
+    answerOpen = false;
+    document.getElementById('answerPanel').hidden = true;
+    document.getElementById('chatSendRow').style.display    = 'none';
+    document.getElementById('chatReadonly').hidden          = false;
+    document.getElementById('parSymCard').style.display     = 'none';
+    document.getElementById('parCabinWrap').style.display   = 'none';
+    document.getElementById('parSubmitWrap').style.display  = 'none';
 
     const correctAns = PLANE_VERSIONS[cfgPlaneVersion]?.answer || 'amp';
     const correctSym = SYM[correctAns];
     let html = '';
     if (!state.revealed) {
-      html = `<div style="font-size:15px;margin:8px 0">${state.answer ? 'A resposta do grupo foi enviada.' : 'A dinâmica foi encerrada.'}</div>
-        <div style="font-size:13px;color:var(--muted)">Aguarde a pessoa facilitadora liberar o resultado.</div>`;
+      html = `<div class="await-box"><span class="pulse" aria-hidden="true"></span>
+        <p><strong>${state.answer ? 'A resposta do grupo foi enviada.' : 'A dinâmica foi encerrada.'}</strong></p>
+        <p class="muted">Aguarde a pessoa facilitadora liberar o resultado.</p></div>`;
     } else if (state.answer) {
       const sym = SYM[state.answer];
-      html = `<div style="font-size:52px;color:var(--red);margin:8px 0">${esc(sym?.ch||'?')}</div>
+      html = `<div class="result-glyph" aria-hidden="true">${esc(sym?.ch||'?')}</div>
+        <div class="result-name">${esc(sym?.name||'')}</div>
         <div class="${state.correct?'result-ok':'result-err'}">
           ${state.correct ? 'O grupo acertou! Resposta correta.' : 'O grupo errou.'}
         </div>`;
       if (!state.correct) {
-        html += `<div style="margin-top:14px;font-size:14px">O símbolo correto era:<br>
-          <strong style="font-size:36px;color:var(--red)">${esc(correctSym?.ch||'?')}</strong><br>
-          <span style="color:var(--muted)">${esc(correctSym?.name||'')}</span>
-        </div>`;
+        html += `<p class="result-label">O símbolo correto era:</p>
+          <div class="result-glyph" aria-hidden="true">${esc(correctSym?.ch||'?')}</div>
+          <div class="result-name">${esc(correctSym?.name||'')}</div>`;
       }
     } else {
-      html = `<div style="font-size:14px;margin-bottom:8px;color:var(--muted)">A dinâmica foi encerrada.</div>
-        <div style="font-size:13px;color:var(--muted)">O símbolo que estava em todas as folhas era:</div>
-        <div style="font-size:52px;font-weight:900;color:var(--red);margin:8px 0">${esc(correctSym?.ch||'?')}</div>
-        <div style="font-size:14px;color:var(--muted)">${esc(correctSym?.name||'')}</div>`;
+      html = `<p class="muted">A dinâmica foi encerrada sem resposta.</p>
+        <p class="result-label">O símbolo que estava em todas as folhas era:</p>
+        <div class="result-glyph" aria-hidden="true">${esc(correctSym?.ch||'?')}</div>
+        <div class="result-name">${esc(correctSym?.name||'')}</div>`;
     }
     document.getElementById('parResultCard').style.display = 'block';
     document.getElementById('parResultContent').innerHTML  = html;
@@ -1860,14 +2184,17 @@ function mkSeat(role, x, y, rToN, targets) {
   </g>`;
 }
 
-// ─────────────────────────────────────────── RULES BANNER
+// ─────────────────────────────────────────── REGRAS DE COMUNICAÇÃO (texto do cartão do papel)
 
 function buildRulesHtml(role) {
   if (!role) return '';
   const targets = getTargets(role, allRoles);
-  if (targets.length === 0) return `<strong>Você é ${esc(ROLE_LABEL[role]||role)}.</strong> Aguarde a dinâmica iniciar.`;
-  const tNames = targets.map(r => `<strong>${esc(ROLE_LABEL[r]||r)}</strong>`).join(', ');
-  return `<strong>Você é ${esc(ROLE_LABEL[role]||role)}.</strong> Pode se comunicar com: ${tNames}.`;
+  if (targets.length === 0) return 'Aguarde a dinâmica iniciar.';
+  const tNames = targets.map(r => `<strong>${esc(ROLE_LABEL[r]||r)}</strong>`);
+  const list = tNames.length > 1
+    ? tNames.slice(0, -1).join(', ') + ' e ' + tNames[tNames.length - 1]
+    : tNames[0];
+  return `Você pode conversar com: ${list}.`;
 }
 
 // ─────────────────────────────────────────── TIMER
@@ -1926,8 +2253,21 @@ function addChatMsg(msg) {
   chat.scrollTop = chat.scrollHeight;
 
   const incoming = msg.fromRole !== myPRole;
-  if (incoming && now() - (msg.ts||0) < 10000) toast(`Nova mensagem de ${ROLE_LABEL[msg.fromRole] || msg.fromRole}`);
+  if (incoming && now() - (msg.ts||0) < 10000) {
+    const sel = document.getElementById('chatToSel').value;
+    const chatVisible = gameTab === 'chat' || window.matchMedia('(min-width: 900px)').matches;
+    if (!chatVisible) { tabUnread++; updateTabBadge(); }
+    if (msg.fromRole !== sel || !chatVisible) {
+      unreadBy[msg.fromRole] = (unreadBy[msg.fromRole] || 0) + 1;
+      const u = document.querySelector(`#chatToChips [data-role="${msg.fromRole}"] .unread`);
+      if (u) { u.textContent = unreadBy[msg.fromRole]; u.hidden = false; }
+      toast(`Nova mensagem de ${ROLE_LABEL[msg.fromRole] || msg.fromRole}`);
+    }
+    if (document.hidden) document.title = '(nova mensagem) ' + BASE_TITLE;
+  }
 }
+const BASE_TITLE = document.title;
+document.addEventListener('visibilitychange', () => { if (!document.hidden) document.title = BASE_TITLE; });
 
 // ─────────────────────────────────────────── SESSION RESUME
 
@@ -1989,7 +2329,7 @@ async function resumeSession() {
 
       await registerPresence(false, room.state?.phase);
 
-      if (myPRole) document.getElementById('parRoleHdr').textContent = ROLE_LABEL[myPRole] || '—';
+      document.getElementById('parRoleHdr').textContent = myPRole ? (ROLE_LABEL[myPRole] || myPRole) : `Sala ${rCode}`;
       showScreen('s-par-game');
       listenRoom();
     } catch(e) { console.error(e); clearAv(); }
@@ -2003,6 +2343,7 @@ function clearAv() {
 // ─────────────────────────────────────────── INIT
 
 window.addEventListener('DOMContentLoaded', () => {
+  initSetup();
   if (!SDK_OK) { document.getElementById('fatalMsg').style.display = 'block'; return; }
 
   const urlCode = new URLSearchParams(location.search).get('code');
