@@ -302,6 +302,27 @@
     .blueprint svg { display: block; width: 100%; height: auto; }
     .bp-seat { transition: opacity .15s; }
 
+    /* Tela da dinâmica mais larga: em telas grandes, mapa à esquerda e conversa à direita */
+    .game-grid { display: flex; flex-direction: column; }
+    .game-left, .game-right { display: contents; }
+    #parResultCard { order: 0; } #parTimerCard { order: 1; } #parBriefing { order: 2; }
+    #parSubmitWrap { order: 3; } #parCabinWrap { order: 4; } #parSymCard { order: 5; }
+    #parRulesBanner { order: 6; } .game-right > .card:last-child { order: 7; }
+    @media (min-width: 900px) {
+      #pp-game.container { max-width: 1180px; }
+      .game-grid { display: grid; grid-template-columns: minmax(380px, 5fr) minmax(0, 7fr); gap: 0 20px; align-items: start; }
+      .game-left, .game-right { display: block; }
+      #parResultCard { grid-column: 1 / -1; }
+      .game-grid > #parResultCard { order: 0; }
+      .game-left { position: sticky; top: 12px; }
+      .blueprint { max-width: 500px; }
+      .game-right .chat-area { max-height: 420px; min-height: 240px; }
+      .game-right .sym-card { width: 96px; height: 100px; font-size: 40px; }
+    }
+    @media (min-width: 1024px) {
+      #s-fac-game .container, #s-fac-lobby .container { max-width: 1100px; }
+    }
+
     /* Cabin legend */
     .cabin-legend {
       display: flex; gap: 16px; flex-wrap: wrap;
@@ -593,30 +614,14 @@
 
   <!-- PLAYING / ENDED state -->
   <div id="pp-game" class="container" style="display:none">
+    <div class="game-grid">
 
     <div class="card" id="parResultCard" style="display:none">
       <div class="card-title">Resultado</div>
       <div class="result-box" id="parResultContent"></div>
     </div>
 
-    <div class="card" id="parTimerCard" style="display:none">
-      <div class="timer-big" id="parTimerDisp">--:--</div>
-      <div class="timer-lbl" id="parTimerLbl">Em andamento</div>
-    </div>
-
-    <div class="card" id="parBriefing" style="display:none">
-      <div class="card-title">Orientação para a Pessoa A</div>
-      <p style="font-size:14px;line-height:1.6">Você é a pessoa que submete a resposta final do grupo. Converse com B1 e B2 para chegar a um consenso e só envie a resposta quando o grupo estiver de acordo.</p>
-    </div>
-
-    <div id="parSubmitWrap" style="display:none">
-      <button class="submit-hero" onclick="openAnswerModal()">
-        
-        <span class="submit-hero-label">Submeter resposta final</span>
-        <span class="submit-hero-sub">Toque aqui quando o grupo chegar a um consenso</span>
-      </button>
-    </div>
-
+      <div class="game-left">
     <div id="parCabinWrap" style="display:none">
       <div class="card" style="padding:16px 12px">
         <div class="card-title">Mapa da cabine</div>
@@ -636,6 +641,26 @@
           </div>
         </div>
       </div>
+    </div>
+
+      </div>
+      <div class="game-right">
+    <div class="card" id="parTimerCard" style="display:none">
+      <div class="timer-big" id="parTimerDisp">--:--</div>
+      <div class="timer-lbl" id="parTimerLbl">Em andamento</div>
+    </div>
+
+    <div class="card" id="parBriefing" style="display:none">
+      <div class="card-title">Orientação para a Pessoa A</div>
+      <p style="font-size:14px;line-height:1.6">Você é a pessoa que submete a resposta final do grupo. Converse com B1 e B2 para chegar a um consenso e só envie a resposta quando o grupo estiver de acordo.</p>
+    </div>
+
+    <div id="parSubmitWrap" style="display:none">
+      <button class="submit-hero" onclick="openAnswerModal()">
+        
+        <span class="submit-hero-label">Submeter resposta final</span>
+        <span class="submit-hero-sub">Toque aqui quando o grupo chegar a um consenso</span>
+      </button>
     </div>
 
     <div class="card" id="parSymCard">
@@ -660,7 +685,8 @@
         </div>
       </div>
     </div>
-
+      </div>
+    </div>
   </div>
 </div>
 
