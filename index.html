@@ -288,43 +288,98 @@
     /* ═══════════════════════════
        CABIN VISUAL
     ═══════════════════════════ */
+    /* Avião visto de cima: asas, motores, cauda, janelas e cockpit */
+    .plane {
+      --wing: 56px;
+      position: relative; margin: 6px auto 14px;
+      padding: 0 var(--wing);
+      max-width: calc(236px + var(--wing) * 2);
+    }
+    .plane-wing {
+      position: absolute; top: 36%; width: calc(var(--wing) + 14px); height: 96px;
+      background: linear-gradient(180deg, #E3EBF5, #C7D5E6);
+      filter: drop-shadow(0 2px 2px rgba(0,27,113,.12));
+    }
+    .plane-wing-l { left: 0;  clip-path: polygon(100% 0, 100% 52%, 4% 100%, 0 80%); }
+    .plane-wing-r { right: 0; clip-path: polygon(0 0, 0 52%, 96% 100%, 100% 80%); }
+    .plane-engine {
+      position: absolute; top: calc(36% + 44px); width: 16px; height: 30px;
+      background: linear-gradient(90deg, #AFC0D6, #DCE6F2 45%, #AFC0D6);
+      border-radius: 8px 8px 5px 5px; box-shadow: 0 2px 3px rgba(0,27,113,.18);
+    }
+    .plane-engine-l { left: calc(var(--wing) * .30); }
+    .plane-engine-r { right: calc(var(--wing) * .30); }
+    .plane-fin {
+      position: absolute; bottom: 4px; width: calc(var(--wing) * .62); height: 40px;
+      background: linear-gradient(180deg, #D3DFEE, #B9CADF);
+    }
+    .plane-fin-l { left: calc(var(--wing) * .30);  clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+    .plane-fin-r { right: calc(var(--wing) * .30); clip-path: polygon(0 0, 0 100%, 100% 100%); }
+
     .cabin-outer {
-      max-width: 280px; margin: 0 auto 12px;
-      background: #fff; border: 1.5px solid var(--border);
-      border-radius: 46% 46% 14px 14px / 28% 28% 14px 14px;
-      padding: 10px 12px 16px; position: relative;
+      position: relative; z-index: 1;
+      background: linear-gradient(180deg, #FFFFFF 0%, #F5F8FC 100%);
+      border: 2px solid #C9D6E6;
+      border-radius: 50% 50% 26px 26px / 24% 24% 26px 26px;
+      padding: 8px 24px 14px;
+      box-shadow: 0 6px 18px rgba(0,27,113,.10);
     }
+    /* janelas laterais */
+    .cabin-outer::before, .cabin-outer::after {
+      content: ''; position: absolute; top: 96px; bottom: 34px; width: 6px; border-radius: 3px;
+      background: repeating-linear-gradient(to bottom, #BFDDF7 0 9px, transparent 9px 19px);
+    }
+    .cabin-outer::before { left: 9px; }
+    .cabin-outer::after  { right: 9px; }
+
     .cabin-nose {
-      text-align: center; font-family: 'Raleway', sans-serif;
-      font-weight: 800; font-size: 10px; color: var(--navy);
-      text-transform: uppercase; letter-spacing: 3px;
-      border-bottom: 1.5px dashed var(--border);
-      padding-bottom: 8px; margin-bottom: 10px;
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      margin: 12px 0 10px;
+      font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 9px;
+      color: var(--navy); text-transform: uppercase; letter-spacing: 3px;
     }
-    .cabin-rows { display: flex; flex-direction: column; gap: 7px; align-items: center; }
-    .cabin-row  { display: flex; gap: 10px; align-items: center; justify-content: center; }
-    .cabin-aisle { width: 14px; flex-shrink: 0; }
+    .cockpit-glass {
+      width: 74px; height: 22px;
+      background: linear-gradient(180deg, #0B2A6B, #2A6CC4);
+      border-radius: 40px 40px 10px 10px / 30px 30px 10px 10px;
+      box-shadow: inset 0 2px 3px rgba(255,255,255,.35);
+    }
+    .cabin-rows { display: flex; flex-direction: column; gap: 8px; align-items: center; position: relative; }
+    /* corredor central */
+    .cabin-rows::before {
+      content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 18px;
+      transform: translateX(-50%);
+      background: repeating-linear-gradient(to bottom, #E9EFF7 0 8px, #F2F6FB 8px 16px);
+      border-radius: 4px;
+    }
+    .cabin-row  { display: flex; gap: 10px; align-items: center; justify-content: center; position: relative; z-index: 1; }
+    .cabin-aisle { width: 18px; flex-shrink: 0; }
     .cabin-tail {
       text-align: center; font-family: 'Raleway', sans-serif;
       font-weight: 700; font-size: 9px; color: var(--muted);
-      text-transform: uppercase; letter-spacing: 2px; margin-top: 8px;
+      text-transform: uppercase; letter-spacing: 2px; margin-top: 10px;
     }
     .seat {
-      width: 64px; height: 58px;
-      border-radius: 10px 10px 5px 5px;
+      width: 64px; height: 56px;
+      border-radius: 14px 14px 7px 7px;
       border: 1.5px solid var(--border);
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 2px;
+      align-items: center; justify-content: center; gap: 1px;
       position: relative; transition: transform .15s, box-shadow .15s;
       background: #F9FAFB;
     }
-    .seat-label { font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 13px; color: var(--navy); }
+    /* encosto de cabeça */
+    .seat::before {
+      content: ''; position: absolute; top: 4px; left: 50%; width: 26px; height: 5px;
+      transform: translateX(-50%); border-radius: 3px; background: rgba(0,27,113,.10);
+    }
+    .seat-label { font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 13px; color: var(--navy); margin-top: 6px; }
     .seat-name  {
       font-size: 9px; color: var(--muted); font-weight: 600;
       max-width: 58px; overflow: hidden; text-overflow: ellipsis;
       white-space: nowrap; text-align: center; padding: 0 2px;
     }
-    .seat-dot   { position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+    .seat-dot   { position: absolute; top: 5px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
     .seat-dot.online { background: var(--green); }
     .seat-A  { background: #FFFBEB; border-color: #F59E0B; }
     .seat-A  .seat-label { color: #92400E; }
@@ -332,7 +387,7 @@
     .seat-B  .seat-label { color: #1D4ED8; }
     .seat-CP { background: #F0FDF4; border-color: #86EFAC; }
     .seat-CP .seat-label { color: #166534; }
-    .seat-mine     { transform: scale(1.1); box-shadow: 0 0 0 2.5px var(--blue), 0 4px 10px rgba(0,123,234,.2); z-index: 2; }
+    .seat-mine     { transform: scale(1.08); box-shadow: 0 0 0 2.5px var(--blue), 0 4px 10px rgba(0,123,234,.25); z-index: 2; }
     .seat-reachable { border-style: dashed; border-color: var(--blue); border-width: 2px; }
     .seat-vacant    { opacity: .35; }
 
@@ -444,8 +499,9 @@
       .cover-title { letter-spacing: -0.5px; }
       .sym-card { width: 70px; height: 76px; font-size: 28px; }
       /* .room-code — sem ajuste responsivo necessário (badge fixo) */
-      .seat { width: 58px; height: 52px; }
-      .cabin-outer { max-width: 248px; }
+      .seat { width: 56px; height: 52px; }
+      .plane { --wing: 44px; }
+      .cabin-outer { padding: 8px 20px 14px; }
       .seat-label { font-size: 12px; }
       .seat-name  { font-size: 8px; max-width: 50px; }
       .overview-grid { grid-template-columns: repeat(2, 1fr); }
@@ -455,15 +511,15 @@
     @media (max-width: 400px) {
       .sym-card { width: 60px; height: 68px; font-size: 24px; }
       /* .room-code — badge sem ajuste em 400px */
-      .seat { width: 50px; height: 46px; }
-      .cabin-outer { max-width: 210px; }
+      .seat { width: 48px; height: 46px; }
+      .plane { --wing: 30px; }
+      .cabin-outer { padding: 8px 16px 14px; }
       .row-btns { flex-direction: column; }
     }
     @media (min-width: 768px) {
       .container { padding: 24px 24px 48px; }
       .cover-wrap { padding: 56px 0 40px; }
       .chat-area { max-height: 380px; }
-      .cabin-outer { max-width: 320px; }
       .sym-card { width: 88px; height: 94px; font-size: 36px; }
     }
     @media (min-width: 1024px) {
@@ -1792,32 +1848,30 @@ function renderCabin(parts) {
   const presentRoles = allRoles;
   const cPlus        = ROLE_ORDER.slice(3).filter(r => presentRoles.includes(r));
 
-  let html = `<div class="cabin-outer">
-    <div class="cabin-nose">COCKPIT</div>
+  const pair = (l, r) => `<div class="cabin-row">${mkSeat(l, rToN, targets)}<div class="cabin-aisle"></div>${r ? mkSeat(r, rToN, targets) : '<div style="width:64px"></div>'}</div>`;
+
+  let html = `<div class="plane">
+    <div class="plane-wing plane-wing-l"></div><div class="plane-wing plane-wing-r"></div>
+    <div class="plane-engine plane-engine-l"></div><div class="plane-engine plane-engine-r"></div>
+    <div class="plane-fin plane-fin-l"></div><div class="plane-fin plane-fin-r"></div>
+    <div class="cabin-outer">
+    <div class="cabin-nose"><div class="cockpit-glass"></div>Cockpit</div>
     <div class="cabin-rows">`;
 
-  // Row A
+  // Pessoa A: na frente, no cockpit
   if (presentRoles.includes('A')) {
     html += `<div class="cabin-row">${mkSeat('A', rToN, targets)}</div>`;
   }
 
-  // Row B1 / B2
+  // B1 e B2 lado a lado, na altura das asas
   const b1 = presentRoles.includes('B1');
   const b2 = presentRoles.includes('B2');
-  if (b1 || b2) {
-    html += `<div class="cabin-row">
-      ${b1 ? mkSeat('B1', rToN, targets) : ''}
-      ${b1 && b2 ? '<div class="cabin-aisle"></div>' : ''}
-      ${b2 ? mkSeat('B2', rToN, targets) : ''}
-    </div>`;
-  }
+  if (b1 || b2) html += pair(b1 ? 'B1' : 'B2', b1 && b2 ? 'B2' : null);
 
-  // Rows C-J
-  cPlus.forEach(r => {
-    html += `<div class="cabin-row">${mkSeat(r, rToN, targets)}</div>`;
-  });
+  // C em diante: duas poltronas por fileira, com corredor no meio
+  for (let i = 0; i < cPlus.length; i += 2) html += pair(cPlus[i], cPlus[i+1] || null);
 
-  html += `</div><div class="cabin-tail">CAUDA</div></div>`;
+  html += `</div><div class="cabin-tail">Cauda</div></div></div>`;
   inner.innerHTML = html;
 }
 
