@@ -578,6 +578,7 @@
       <div class="card-title" style="color:#1D4ED8">Instrução</div>
       <p style="font-size:14px;color:#1E40AF;line-height:1.6">Compartilhe o link ou código correto com cada grupo. Quando o número mínimo estiver conectado, clique em <strong>Iniciar</strong>.</p>
     </div>
+    <div class="err-msg" id="facDiag" style="display:none"></div>
     <div id="facLobbyPlanes"></div>
   </div>
 </div>
@@ -847,10 +848,13 @@ function canSee(myRole, msg) {
 
 const SDK_OK = (typeof firebase !== 'undefined');
 let db = null, auth = null;
-if (SDK_OK) {
-  firebase.initializeApp(FIREBASE_CONFIG);
-  db   = firebase.database();
-  auth = firebase.auth();
+// Facilitação e participantes usam "apps" Firebase separados. Assim, abas de participantes
+// abertas no mesmo navegador da facilitação NÃO herdam a identidade dela.
+function initFirebase(mode) {
+  if (db) return;
+  const app = firebase.initializeApp(FIREBASE_CONFIG, mode === 'local' ? 'fac' : 'par');
+  db   = app.database();
+  auth = app.auth();
 }
 
 let myUid = null;          // preenchido por ensureAuth() (login anônimo)
@@ -863,6 +867,7 @@ function now() { return Date.now() + serverOffset; }
 function ensureAuth(mode) {
   if (!SDK_OK) return Promise.reject(new Error('sdk'));
   if (authPromise) return authPromise;
+  try { initFirebase(mode); } catch(e) { return Promise.reject(e); }
   const pers = mode === 'local' ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
   authPromise = auth.setPersistence(pers)
     .then(() => new Promise(resolve => {
@@ -1084,6 +1089,11 @@ async function createSession() {
 
 // ─────────────────────────────────────────── LISTEN ALL PLANES
 
+function facDiag(msg) {
+  const el = document.getElementById('facDiag');
+  if (el) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
+}
+
 function listenAllPlanes() {
   planeList.forEach((p, i) => {
     const ref = db.ref(`aviao/${p.code}`);
@@ -1091,7 +1101,7 @@ function listenAllPlanes() {
     planeRenderedKeys[p.code] = new Set();
     planeCache[p.code] = { state:{}, parts:{}, msgs:[] };
 
-    const onErr = e => { console.error(e); toast(connErr(e)); };
+    const onErr = e => { console.error(e); facDiag(`Sem permissão para ler o avião ${i+1} (${e.code || e.message}). Confira se as regras do Firebase foram publicadas.`); };
     ref.child('state').on('value', snap => {
       planeCache[p.code].state = snap.val() || {};
       updateFacView();
