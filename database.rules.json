@@ -14,13 +14,14 @@
     },
     "aviao": {
       "$code": {
-        ".read": "auth != null",
         ".write": "auth != null && !data.exists() && newData.child('meta/facilitatorId').val() === auth.uid",
         "meta": {
+          ".read": "auth != null",
           ".write": "auth != null && !data.exists() && newData.child('facilitatorId').val() === auth.uid",
           ".validate": "newData.hasChildren(['facilitatorId','numParticipants','planeVersion','createdAt']) && newData.child('numParticipants').isNumber() && newData.child('numParticipants').val() >= 6 && newData.child('numParticipants').val() <= 11 && newData.child('planeVersion').isNumber() && newData.child('planeVersion').val() >= 1 && newData.child('planeVersion').val() <= 5"
         },
         "state": {
+          ".read": "auth != null",
           ".write": "auth != null && root.child('aviao/'+$code+'/meta/facilitatorId').val() === auth.uid",
           "phase": {
             ".write": "auth != null && root.child('aviao/'+$code+'/participants/'+auth.uid+'/role').val() === 'A' && root.child('aviao/'+$code+'/state/phase').val() === 'playing' && newData.val() === 'ended'",
@@ -43,8 +44,9 @@
           }
         },
         "participants": {
+          ".read": "auth != null",
           "$uid": {
-            ".write": "auth != null && (root.child('aviao/'+$code+'/meta/facilitatorId').val() === auth.uid || ($uid === auth.uid && newData.child('role').val() === data.child('role').val() && newData.child('symbols').exists() === data.child('symbols').exists() && (data.exists() || root.child('aviao/'+$code+'/state/phase').val() === 'lobby')))",
+            ".write": "auth != null && (root.child('aviao/'+$code+'/meta/facilitatorId').val() === auth.uid || ($uid === auth.uid && newData.child('role').val() === data.child('role').val() && (data.exists() || root.child('aviao/'+$code+'/state/phase').val() === 'lobby')))",
             ".validate": "newData.hasChildren(['name','connectedAt'])",
             "name": {
               ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 30"
@@ -58,6 +60,15 @@
             "role": {
               ".validate": "newData.val() === null || newData.val() === 'A' || newData.val() === 'B1' || newData.val() === 'B2' || newData.val() === 'C' || newData.val() === 'D' || newData.val() === 'E' || newData.val() === 'F' || newData.val() === 'G' || newData.val() === 'H' || newData.val() === 'I' || newData.val() === 'J'"
             },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "private": {
+          "$uid": {
+            ".read": "auth != null && ($uid === auth.uid || root.child('aviao/'+$code+'/meta/facilitatorId').val() === auth.uid)",
+            ".write": "auth != null && root.child('aviao/'+$code+'/meta/facilitatorId').val() === auth.uid",
             "symbols": {
               ".validate": "newData.hasChildren() && !newData.child('5').exists()"
             },
@@ -66,15 +77,28 @@
             }
           }
         },
-        "messages": {
-          ".indexOn": [
-            "ts"
-          ],
-          "$mid": {
-            ".write": "auth != null && !data.exists() && newData.child('fromUid').val() === auth.uid && root.child('aviao/'+$code+'/participants/'+auth.uid+'/role').val() === newData.child('fromRole').val() && root.child('aviao/'+$code+'/state/phase').val() === 'playing'",
-            ".validate": "newData.hasChildren(['fromUid','fromRole','toRole','text','ts']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500",
-            "$other": {
-              ".validate": "$other === 'fromUid' || $other === 'fromRole' || $other === 'fromName' || $other === 'toRole' || $other === 'text' || $other === 'ts'"
+        "inbox": {
+          ".read": "auth != null && root.child('aviao/'+$code+'/meta/facilitatorId').val() === auth.uid",
+          "$role": {
+            ".read": "auth != null && root.child('aviao/'+$code+'/participants/'+auth.uid+'/role').val() === $role",
+            "$mid": {
+              ".write": "auth != null && !data.exists() && newData.child('fromUid').val() === auth.uid && root.child('aviao/'+$code+'/participants/'+auth.uid+'/role').val() === newData.child('fromRole').val() && root.child('aviao/'+$code+'/state/phase').val() === 'playing' && ((newData.child('fromRole').val() === 'A' && ($role === 'B1' || $role === 'B2')) || ((newData.child('fromRole').val() === 'B1' || newData.child('fromRole').val() === 'B2') && $role !== newData.child('fromRole').val()) || (newData.child('fromRole').val() !== 'A' && newData.child('fromRole').val() !== 'B1' && newData.child('fromRole').val() !== 'B2' && ($role === 'B1' || $role === 'B2')))",
+              ".validate": "newData.hasChildren(['fromUid','fromRole','toRole','text','ts']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500 && newData.child('ts').isNumber() && newData.child('ts').val() <= now + 10000 && newData.child('ts').val() >= now - 120000 && newData.child('toRole').val() === $role && ($role === 'A' || $role === 'B1' || $role === 'B2' || $role === 'C' || $role === 'D' || $role === 'E' || $role === 'F' || $role === 'G' || $role === 'H' || $role === 'I' || $role === 'J')",
+              "$other": {
+                ".validate": "$other === 'fromUid' || $other === 'fromRole' || $other === 'fromName' || $other === 'toRole' || $other === 'text' || $other === 'ts'"
+              }
+            }
+          }
+        },
+        "sent": {
+          "$role": {
+            ".read": "auth != null && root.child('aviao/'+$code+'/participants/'+auth.uid+'/role').val() === $role",
+            "$mid": {
+              ".write": "auth != null && !data.exists() && newData.child('fromUid').val() === auth.uid && root.child('aviao/'+$code+'/participants/'+auth.uid+'/role').val() === $role && newData.child('fromRole').val() === $role && root.child('aviao/'+$code+'/state/phase').val() === 'playing'",
+              ".validate": "newData.hasChildren(['fromUid','fromRole','toRole','text','ts']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500 && newData.child('ts').isNumber() && newData.child('ts').val() <= now + 10000 && newData.child('ts').val() >= now - 120000 && ($role === 'A' || $role === 'B1' || $role === 'B2' || $role === 'C' || $role === 'D' || $role === 'E' || $role === 'F' || $role === 'G' || $role === 'H' || $role === 'I' || $role === 'J')",
+              "$other": {
+                ".validate": "$other === 'fromUid' || $other === 'fromRole' || $other === 'fromName' || $other === 'toRole' || $other === 'text' || $other === 'ts'"
+              }
             }
           }
         }

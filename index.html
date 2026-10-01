@@ -912,8 +912,6 @@ let roleToUid        = {};
 let uidToRole        = {};
 let uidToName        = {};
 let timerIntvl       = null;
-let cachedMsgs       = [];
-let renderedKeys     = new Set();
 let selectedAns      = null;
 let cabinRendered    = false;
 
@@ -1039,7 +1037,7 @@ async function createSession() {
       let code, t2 = 0;
       do {
         code = rndCode();
-        const s = await db.ref(`aviao/${code}`).once('value');
+        const s = await db.ref(`aviao/${code}/meta`).once('value');
         if (!s.exists()) break;
       } while (++t2 < 10);
 
@@ -1111,16 +1109,24 @@ function listenAllPlanes() {
       updateFacView();
     }, onErr);
 
-    ref.child('messages').on('child_added', snap => {
-      if (planeRenderedKeys[p.code].has(snap.key)) return;
-      planeRenderedKeys[p.code].add(snap.key);
-      const msg = { _key: snap.key, ...snap.val() };
-      planeCache[p.code].msgs.push(msg);
-      // Append to monitor if this plane is currently viewed
-      if (activePlane === p.code) {
-        const mon = document.getElementById(`fac-mon-${p.code}`);
-        if (mon) appendFacMsgTo(mon, msg);
-      }
+    // Cada papel tem a própria caixa de entrada: a facilitação lê todas, cada pessoa lê só a sua
+    ROLE_ORDER.slice(0, p.numParticipants).forEach(role => {
+      ref.child(`inbox/${role}`).on('child_added', snap => {
+        if (planeRenderedKeys[p.code].has(snap.key)) return;
+        planeRenderedKeys[p.code].add(snap.key);
+        const msg = { _key: snap.key, ...snap.val() };
+        const list = planeCache[p.code].msgs;
+        const inOrder = list.length === 0 || (msg.ts||0) >= (list[list.length-1].ts||0);
+        list.push(msg);
+        if (!inOrder) list.sort((a,b) => (a.ts||0)-(b.ts||0));
+        if (activePlane === p.code) {
+          const mon = document.getElementById(`fac-mon-${p.code}`);
+          if (mon) {
+            if (inOrder) appendFacMsgTo(mon, msg);
+            else { mon.innerHTML = ''; list.forEach(m => appendFacMsgTo(mon, m)); }
+          }
+        }
+      }, onErr);
     });
   });
 }
@@ -1202,7 +1208,7 @@ async function startPlane(code) {
     const updates = {};
     chosen.forEach(([uid], i) => {
       updates[`participants/${uid}/role`]    = roles[i];
-      updates[`participants/${uid}/symbols`] = vData.roles[roles[i]];
+      updates[`private/${uid}/symbols`] = vData.roles[roles[i]];
     });
     updates['state/phase']    = 'playing';
     updates['state/timerEnd'] = plan.timerMinutes > 0
@@ -1311,7 +1317,7 @@ function renderActivePlane() {
     <div class="card-title">Participantes — Avião ${idx+1}</div>
     <div class="par-list">${parArr.map(([,pr]) => `
       <div class="par-item">
-        <div class="dot-online"></div>
+        <div class="dot-online" ${pr.online === false ? 'style="background:var(--border)" title="Sem conexão"' : ''}></div>
         <div class="par-name">${esc(pr.name||'?')}</div>
         ${pr.role ? `<div>${roleBadge(pr.role)}</div>` : ''}
       </div>`).join('')}
@@ -1446,9 +1452,8 @@ async function joinRoom() {
 
   try {
     await ensureAuth();
-    const snap = await db.ref(`aviao/${code}`).once('value');
-    if (!snap.exists()) { joinFail('Sala não encontrada. Verifique o link com a pessoa facilitadora.'); return; }
-    const room = snap.val();
+    const room = await readRoom(code);
+    if (!room) { joinFail('Sala não encontrada. Verifique o link com a pessoa facilitadora.'); return; }
 
     if (now() - (room.meta?.createdAt||0) > 24*3600*1000) { joinFail('Esta sala expirou.'); return; }
     if (room.state?.phase === 'ended') { joinFail('Esta sessão já foi encerrada.'); return; }
@@ -1489,7 +1494,7 @@ async function registerPresence(isNew, phase) {
   const meRef = roomRef.child(`participants/${myUid}`);
   const inGame = phase === 'playing' || phase === 'ended';
   if (isNew) {
-    await meRef.set({ name:myName, role:null, symbols:null, online:true, connectedAt:now() });
+    await meRef.set({ name:myName, role:null, online:true, connectedAt:now() });
   } else {
     await meRef.update({ name:myName, online:true });
   }
@@ -1501,6 +1506,18 @@ async function registerPresence(isNew, phase) {
     meRef.onDisconnect().remove();
     presenceMode = 'lobby';
   }
+}
+
+// Lê só as partes públicas da sala (a folha e as caixas de mensagens têm leitura restrita)
+async function readRoom(code) {
+  const base = db.ref(`aviao/${code}`);
+  const [m, st, pa] = await Promise.all([
+    base.child('meta').once('value'),
+    base.child('state').once('value'),
+    base.child('participants').once('value'),
+  ]);
+  if (!m.exists()) return null;
+  return { meta: m.val(), state: st.val() || {}, participants: pa.val() || {} };
 }
 
 function joinFail(msg) {
@@ -1535,9 +1552,14 @@ function sendMsg() {
   if (!getTargets(myPRole, allRoles).includes(toRole)) {
     toast('Comunicação não permitida pelas regras do avião.'); return;
   }
-  roomRef.child('messages').push({
-    fromUid:  myUid, fromRole: myPRole, fromName: myName,
-    toRole, text, ts: now(),
+  const id  = roomRef.child(`inbox/${toRole}`).push().key;
+  const msg = { fromUid: myUid, fromRole: myPRole, fromName: myName, toRole, text, ts: now() };
+  roomRef.update({
+    [`inbox/${toRole}/${id}`]:     msg,     // caixa de entrada de quem recebe
+    [`sent/${myPRole}/${id}`]:     msg,     // cópia para quem envia (histórico ao recarregar)
+  }).catch(e => {
+    const denied = e && (e.code === 'PERMISSION_DENIED' || /permission_denied/i.test(e.message||''));
+    toast(denied ? 'Mensagem recusada pelas regras do avião.' : connErr(e));
   });
   document.getElementById('chatInp').value = '';
 }
@@ -1594,6 +1616,9 @@ async function confirmAnswer() {
 // ─────────────────────────────────────────── ROOM LISTENER (participant)
 
 let lastState = {}, lastParts = {};
+let mySymbols = null;
+let msgStore = {};
+let chatMsgs = [];
 function listenRoom() {
   if (!roomRef) return;
   const onErr = e => { console.error(e); toast(connErr(e)); };
@@ -1624,13 +1649,28 @@ function listenRoom() {
     handlePar(lastState, lastParts);
   }, onErr);
 
-  roomRef.child('messages').on('child_added', snap => {
-    if (renderedKeys.has(snap.key)) return;
-    renderedKeys.add(snap.key);
-    const msg = { _key: snap.key, ...snap.val() };
-    cachedMsgs.push(msg);
-    renderMsg(msg);
+  // A folha de símbolos fica em um caminho que só a própria pessoa (e a facilitação) lê
+  roomRef.child(`private/${myUid}/symbols`).on('value', snap => {
+    mySymbols = snap.val() || null;
+    handlePar(lastState, lastParts);
   }, onErr);
+
+  attachMsgListeners();   // se a pessoa já tem papel (retorno à sala)
+}
+
+let msgListening = false;
+function attachMsgListeners() {
+  if (msgListening || !myPRole || !roomRef) return;
+  msgListening = true;
+  const onErr = e => { console.error(e); toast(connErr(e)); };
+  const add = snap => {
+    if (msgStore[snap.key]) return;
+    const msg = { _key: snap.key, ...snap.val() };
+    msgStore[snap.key] = msg;
+    addChatMsg(msg);
+  };
+  roomRef.child(`inbox/${myPRole}`).on('child_added', add, onErr);
+  roomRef.child(`sent/${myPRole}`).on('child_added', add, onErr);
 }
 
 // ─────────────────────────────────────────── PAR HANDLER
@@ -1643,11 +1683,7 @@ function handlePar(state, parts) {
   if (me.role && !myPRole) {
     myPRole = me.role;
     document.getElementById('parRoleHdr').textContent = ROLE_LABEL[myPRole] || myPRole;
-    // Flush cached messages now we know our role
-    const chat  = document.getElementById('parChat');
-    const empty = document.getElementById('parChatEmpty');
-    cachedMsgs.forEach(msg => { if (canSee(myPRole, msg)) renderMsg(msg); });
-    if (chat.querySelectorAll('.bubble').length > 0 && empty && chat.contains(empty)) empty.remove();
+    attachMsgListeners();
   }
 
   if (phase === 'lobby') {
@@ -1677,8 +1713,8 @@ function handlePar(state, parts) {
   if (brief) brief.style.display = (myPRole === 'A' && phase === 'playing') ? 'block' : 'none';
 
   // Symbols (render once)
-  if (me.symbols && document.getElementById('parSymGrid').childElementCount === 0) {
-    document.getElementById('parSymGrid').innerHTML = me.symbols.map(symHtml).join('');
+  if (mySymbols && document.getElementById('parSymGrid').childElementCount === 0) {
+    document.getElementById('parSymGrid').innerHTML = mySymbols.map(symHtml).join('');
   }
 
   // Cabin visual (re-render on each state update to reflect who's connected)
@@ -1748,7 +1784,9 @@ function renderCabin(parts) {
 
   // Map role → name
   const rToN = {};
-  Object.values(parts).forEach(p => { if (p.role) rToN[p.role] = p.name || ''; });
+  const rOnline = {};
+  Object.values(parts).forEach(p => { if (p.role) { rToN[p.role] = p.name || ''; rOnline[p.role] = p.online !== false; } });
+  cabinOnline = rOnline;
 
   const targets      = getTargets(myPRole, allRoles);
   const presentRoles = allRoles;
@@ -1783,11 +1821,12 @@ function renderCabin(parts) {
   inner.innerHTML = html;
 }
 
+let cabinOnline = {};
 function mkSeat(role, rToN, targets) {
   const isMe       = role === myPRole;
   const isReach    = targets.includes(role);
   const name       = rToN[role] || '';
-  const online     = !!name;
+  const online     = !!name && cabinOnline[role] !== false;
 
   let cls = `seat ${seatCls(role)}`;
   if (isMe)      cls += ' seat-mine';
@@ -1840,26 +1879,36 @@ function startTimer(endTs, dispId, lblId, cardId) {
 
 // ─────────────────────────────────────────── MESSAGE RENDERING
 
-function renderMsg(msg) {
-  if (!myPRole) return;
-  if (!canSee(myPRole, msg)) return;
-
-  const chat  = document.getElementById('parChat');
-  const empty = document.getElementById('parChatEmpty');
-  if (empty && chat.contains(empty)) empty.remove();
-
+function bubbleEl(msg) {
   const ts    = new Date(msg.ts||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   const isOut = msg.fromRole === myPRole;
   const from  = isOut ? 'Você' : (ROLE_LABEL[msg.fromRole] || msg.fromRole);
   const to    = isOut ? (ROLE_LABEL[msg.toRole]||msg.toRole) : 'Você';
-
   const b = document.createElement('div');
   b.className = `bubble ${isOut ? 'bubble-out' : 'bubble-in'}`;
   b.innerHTML = `<div class="bubble-meta">${esc(from)} → ${esc(to)} · ${ts}</div>${esc(msg.text)}`;
-  chat.appendChild(b);
+  return b;
+}
+
+// Mensagens chegam de duas caixas (recebidas e enviadas); mantém tudo em ordem de horário
+function addChatMsg(msg) {
+  const chat  = document.getElementById('parChat');
+  const empty = document.getElementById('parChatEmpty');
+  if (empty && chat.contains(empty)) empty.remove();
+
+  const inOrder = chatMsgs.length === 0 || (msg.ts||0) >= (chatMsgs[chatMsgs.length-1].ts||0);
+  chatMsgs.push(msg);
+  if (inOrder) {
+    chat.appendChild(bubbleEl(msg));
+  } else {
+    chatMsgs.sort((a,b) => (a.ts||0)-(b.ts||0));
+    chat.querySelectorAll('.bubble').forEach(n => n.remove());
+    chatMsgs.forEach(m => chat.appendChild(bubbleEl(m)));
+  }
   chat.scrollTop = chat.scrollHeight;
 
-  if (!isOut) toast(`Nova mensagem de ${from}`);
+  const incoming = msg.fromRole !== myPRole;
+  if (incoming && now() - (msg.ts||0) < 10000) toast(`Nova mensagem de ${ROLE_LABEL[msg.fromRole] || msg.fromRole}`);
 }
 
 // ─────────────────────────────────────────── SESSION RESUME
@@ -1903,9 +1952,8 @@ async function resumeSession() {
     if (r !== 'ok') { clearAv(); }
   } else if (role === 'par' && rCode) {
     try {
-      const snap = await db.ref(`aviao/${rCode}`).once('value');
-      if (!snap.exists()) { clearAv(); return; }
-      const room = snap.val();
+      const room = await readRoom(rCode);
+      if (!room) { clearAv(); return; }
       if (now() - (room.meta?.createdAt||0) > 24*3600*1000) { clearAv(); return; }
       if (room.state?.phase === 'ended') { clearAv(); return; }
 
