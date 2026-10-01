@@ -1118,7 +1118,8 @@ function ensureAuth(mode) {
 }
 function connErr(e) {
   console.error(e);
-  return 'Não foi possível conectar ao servidor. Verifique a internet e tente de novo.';
+  const code = e && (e.code || (e.message && /^[a-z-]+\/[a-z-]+/i.test(e.message) ? e.message.split(/\s/)[0] : ''));
+  return 'Não foi possível conectar ao servidor. Verifique a internet e tente de novo.' + (code ? ` (código: ${code})` : '');
 }
 
 let myRole   = null;  // 'fac' | 'par'
