@@ -288,108 +288,19 @@
     /* ═══════════════════════════
        CABIN VISUAL
     ═══════════════════════════ */
-    /* Avião visto de cima: asas, motores, cauda, janelas e cockpit */
-    .plane {
-      --wing: 56px;
-      position: relative; margin: 6px auto 14px;
-      padding: 0 var(--wing);
-      max-width: calc(236px + var(--wing) * 2);
+    /* Planta técnica (blueprint) do avião */
+    .blueprint {
+      border-radius: 12px; padding: 6px 4px 2px; max-width: 420px; margin: 0 auto;
+      background:
+        linear-gradient(rgba(255,255,255,.14) 1px, transparent 1px) 0 0 / 80px 80px,
+        linear-gradient(90deg, rgba(255,255,255,.14) 1px, transparent 1px) 0 0 / 80px 80px,
+        linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px) 0 0 / 16px 16px,
+        linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px) 0 0 / 16px 16px,
+        radial-gradient(circle at 50% 35%, #0F45BE 0%, #0A2F9F 50%, #001B71 100%);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.18), 0 6px 18px rgba(0,27,113,.18);
     }
-    .plane-wing {
-      position: absolute; top: 36%; width: calc(var(--wing) + 14px); height: 96px;
-      background: linear-gradient(180deg, #E3EBF5, #C7D5E6);
-      filter: drop-shadow(0 2px 2px rgba(0,27,113,.12));
-    }
-    .plane-wing-l { left: 0;  clip-path: polygon(100% 0, 100% 52%, 4% 100%, 0 80%); }
-    .plane-wing-r { right: 0; clip-path: polygon(0 0, 0 52%, 96% 100%, 100% 80%); }
-    .plane-engine {
-      position: absolute; top: calc(36% + 44px); width: 16px; height: 30px;
-      background: linear-gradient(90deg, #AFC0D6, #DCE6F2 45%, #AFC0D6);
-      border-radius: 8px 8px 5px 5px; box-shadow: 0 2px 3px rgba(0,27,113,.18);
-    }
-    .plane-engine-l { left: calc(var(--wing) * .30); }
-    .plane-engine-r { right: calc(var(--wing) * .30); }
-    .plane-fin {
-      position: absolute; bottom: 4px; width: calc(var(--wing) * .62); height: 40px;
-      background: linear-gradient(180deg, #D3DFEE, #B9CADF);
-    }
-    .plane-fin-l { left: calc(var(--wing) * .30);  clip-path: polygon(100% 0, 100% 100%, 0 100%); }
-    .plane-fin-r { right: calc(var(--wing) * .30); clip-path: polygon(0 0, 0 100%, 100% 100%); }
-
-    .cabin-outer {
-      position: relative; z-index: 1;
-      background: linear-gradient(180deg, #FFFFFF 0%, #F5F8FC 100%);
-      border: 2px solid #C9D6E6;
-      border-radius: 50% 50% 26px 26px / 24% 24% 26px 26px;
-      padding: 8px 24px 14px;
-      box-shadow: 0 6px 18px rgba(0,27,113,.10);
-    }
-    /* janelas laterais */
-    .cabin-outer::before, .cabin-outer::after {
-      content: ''; position: absolute; top: 96px; bottom: 34px; width: 6px; border-radius: 3px;
-      background: repeating-linear-gradient(to bottom, #BFDDF7 0 9px, transparent 9px 19px);
-    }
-    .cabin-outer::before { left: 9px; }
-    .cabin-outer::after  { right: 9px; }
-
-    .cabin-nose {
-      display: flex; flex-direction: column; align-items: center; gap: 5px;
-      margin: 12px 0 10px;
-      font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 9px;
-      color: var(--navy); text-transform: uppercase; letter-spacing: 3px;
-    }
-    .cockpit-glass {
-      width: 74px; height: 22px;
-      background: linear-gradient(180deg, #0B2A6B, #2A6CC4);
-      border-radius: 40px 40px 10px 10px / 30px 30px 10px 10px;
-      box-shadow: inset 0 2px 3px rgba(255,255,255,.35);
-    }
-    .cabin-rows { display: flex; flex-direction: column; gap: 8px; align-items: center; position: relative; }
-    /* corredor central */
-    .cabin-rows::before {
-      content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 18px;
-      transform: translateX(-50%);
-      background: repeating-linear-gradient(to bottom, #E9EFF7 0 8px, #F2F6FB 8px 16px);
-      border-radius: 4px;
-    }
-    .cabin-row  { display: flex; gap: 10px; align-items: center; justify-content: center; position: relative; z-index: 1; }
-    .cabin-aisle { width: 18px; flex-shrink: 0; }
-    .cabin-tail {
-      text-align: center; font-family: 'Raleway', sans-serif;
-      font-weight: 700; font-size: 9px; color: var(--muted);
-      text-transform: uppercase; letter-spacing: 2px; margin-top: 10px;
-    }
-    .seat {
-      width: 64px; height: 56px;
-      border-radius: 14px 14px 7px 7px;
-      border: 1.5px solid var(--border);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 1px;
-      position: relative; transition: transform .15s, box-shadow .15s;
-      background: #F9FAFB;
-    }
-    /* encosto de cabeça */
-    .seat::before {
-      content: ''; position: absolute; top: 4px; left: 50%; width: 26px; height: 5px;
-      transform: translateX(-50%); border-radius: 3px; background: rgba(0,27,113,.10);
-    }
-    .seat-label { font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 13px; color: var(--navy); margin-top: 6px; }
-    .seat-name  {
-      font-size: 9px; color: var(--muted); font-weight: 600;
-      max-width: 58px; overflow: hidden; text-overflow: ellipsis;
-      white-space: nowrap; text-align: center; padding: 0 2px;
-    }
-    .seat-dot   { position: absolute; top: 5px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
-    .seat-dot.online { background: var(--green); }
-    .seat-A  { background: #FFFBEB; border-color: #F59E0B; }
-    .seat-A  .seat-label { color: #92400E; }
-    .seat-B  { background: #EFF6FF; border-color: #93C5FD; }
-    .seat-B  .seat-label { color: #1D4ED8; }
-    .seat-CP { background: #F0FDF4; border-color: #86EFAC; }
-    .seat-CP .seat-label { color: #166534; }
-    .seat-mine     { transform: scale(1.08); box-shadow: 0 0 0 2.5px var(--blue), 0 4px 10px rgba(0,123,234,.25); z-index: 2; }
-    .seat-reachable { border-style: dashed; border-color: var(--blue); border-width: 2px; }
-    .seat-vacant    { opacity: .35; }
+    .blueprint svg { display: block; width: 100%; height: auto; }
+    .bp-seat { transition: opacity .15s; }
 
     /* Cabin legend */
     .cabin-legend {
@@ -499,11 +410,6 @@
       .cover-title { letter-spacing: -0.5px; }
       .sym-card { width: 70px; height: 76px; font-size: 28px; }
       /* .room-code — sem ajuste responsivo necessário (badge fixo) */
-      .seat { width: 56px; height: 52px; }
-      .plane { --wing: 44px; }
-      .cabin-outer { padding: 8px 20px 14px; }
-      .seat-label { font-size: 12px; }
-      .seat-name  { font-size: 8px; max-width: 50px; }
       .overview-grid { grid-template-columns: repeat(2, 1fr); }
       .chat-area { max-height: 260px; }
       .modal-box { padding: 24px 16px; }
@@ -511,9 +417,6 @@
     @media (max-width: 400px) {
       .sym-card { width: 60px; height: 68px; font-size: 24px; }
       /* .room-code — badge sem ajuste em 400px */
-      .seat { width: 48px; height: 46px; }
-      .plane { --wing: 30px; }
-      .cabin-outer { padding: 8px 16px 14px; }
       .row-btns { flex-direction: column; }
     }
     @media (min-width: 768px) {
@@ -1848,52 +1751,72 @@ function renderCabin(parts) {
   const presentRoles = allRoles;
   const cPlus        = ROLE_ORDER.slice(3).filter(r => presentRoles.includes(r));
 
-  const pair = (l, r) => `<div class="cabin-row">${mkSeat(l, rToN, targets)}<div class="cabin-aisle"></div>${r ? mkSeat(r, rToN, targets) : '<div style="width:64px"></div>'}</div>`;
+  // Posições (centro de cada poltrona) na planta
+  const POS = { A:[180,130], B1:[152,200], B2:[208,200] };
+  cPlus.forEach((r, i) => { POS[r] = [i % 2 === 0 ? 152 : 208, 270 + Math.floor(i / 2) * 70]; });
 
-  let html = `<div class="plane">
-    <div class="plane-wing plane-wing-l"></div><div class="plane-wing plane-wing-r"></div>
-    <div class="plane-engine plane-engine-l"></div><div class="plane-engine plane-engine-r"></div>
-    <div class="plane-fin plane-fin-l"></div><div class="plane-fin plane-fin-r"></div>
-    <div class="cabin-outer">
-    <div class="cabin-nose"><div class="cockpit-glass"></div>Cockpit</div>
-    <div class="cabin-rows">`;
+  const seats = Object.keys(POS).filter(r => presentRoles.includes(r))
+    .map(r => mkSeat(r, POS[r][0], POS[r][1], rToN, targets)).join('');
 
-  // Pessoa A: na frente, no cockpit
-  if (presentRoles.includes('A')) {
-    html += `<div class="cabin-row">${mkSeat('A', rToN, targets)}</div>`;
-  }
-
-  // B1 e B2 lado a lado, na altura das asas
-  const b1 = presentRoles.includes('B1');
-  const b2 = presentRoles.includes('B2');
-  if (b1 || b2) html += pair(b1 ? 'B1' : 'B2', b1 && b2 ? 'B2' : null);
-
-  // C em diante: duas poltronas por fileira, com corredor no meio
-  for (let i = 0; i < cPlus.length; i += 2) html += pair(cPlus[i], cPlus[i+1] || null);
-
-  html += `</div><div class="cabin-tail">Cauda</div></div></div>`;
-  inner.innerHTML = html;
+  inner.innerHTML = `<div class="blueprint">
+    <svg viewBox="0 0 360 660" role="img" aria-label="Planta do avião com a posição de cada pessoa">
+      ${BP_PLANE}
+      ${seats}
+    </svg></div>`;
 }
 
+// Desenho do avião (vista superior, traço branco sobre fundo azul)
+const BP_WING = `<path d="M234 210 C272 240 322 300 352 372 C356 382 350 388 342 385 C300 366 260 340 234 322 Z"/>
+  <path d="M234 300 L330 368 M234 262 L300 322" opacity=".5" stroke-width=".8"/>
+  <path d="M240 222 C276 248 320 304 346 366" opacity=".4" stroke-width=".8"/>
+  <path d="M234 560 C262 566 296 580 316 600 C320 605 316 610 310 609 C282 606 256 600 234 596 Z"/>
+  <g fill="#0B2F9E">
+    <rect x="271" y="226" width="26" height="48" rx="12"/>
+    <ellipse cx="284" cy="232" rx="10" ry="4"/>
+  </g>
+  <ellipse cx="284" cy="232" rx="5" ry="2" fill="none"/>
+  <path d="M284 274 L284 292" opacity=".6"/>`;
+const BP_PLANE = `<g fill="rgba(255,255,255,.05)" stroke="#fff" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M180 24 L180 650" stroke-dasharray="6 4" opacity=".25" fill="none"/>
+  <g>${BP_WING}</g>
+  <g transform="translate(360,0) scale(-1,1)">${BP_WING}</g>
+  <path d="M180 36 C208 36 234 84 234 150 L234 540 C234 575 200 610 190 640 L170 640 C160 610 126 575 126 540 L126 150 C126 84 152 36 180 36 Z" fill="rgba(255,255,255,.07)"/>
+  <path d="M160 82 L165 62 Q180 56 195 62 L200 82 Q180 76 160 82 Z M180 58 L180 79" fill="rgba(255,255,255,.18)"/>
+  <path d="M126 150 L234 150 M126 540 L234 540" opacity=".25" stroke-width=".8" fill="none"/>
+</g>
+<g stroke="#fff" fill="none" stroke-width="1" opacity=".85">
+  <path d="M8 18 L352 18 M8 12 L8 24 M352 12 L352 24 M8 18 l7 -3 v6 z M352 18 l-7 -3 v6 z" fill="#fff"/>
+</g>
+<g font-family="Raleway, Arial, sans-serif" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="2">
+  <text x="180" y="12" font-size="8" opacity=".85" letter-spacing="3">ENVERGADURA</text>
+  <text x="180" y="104" font-size="8" opacity=".7">COCKPIT</text>
+  <text x="180" y="600" font-size="8" opacity=".55">CAUDA</text>
+</g>`;
+
 let cabinOnline = {};
-function mkSeat(role, rToN, targets) {
-  const isMe       = role === myPRole;
-  const isReach    = targets.includes(role);
-  const name       = rToN[role] || '';
-  const online     = !!name && cabinOnline[role] !== false;
+function mkSeat(role, x, y, rToN, targets) {
+  const isMe    = role === myPRole;
+  const isReach = targets.includes(role);
+  const name    = rToN[role] || '';
+  const online  = !!name && cabinOnline[role] !== false;
+  const accent  = role === 'A' ? '#FBBF24' : (role === 'B1' || role === 'B2') ? '#93C5FD' : '#86EFAC';
 
-  let cls = `seat ${seatCls(role)}`;
-  if (isMe)      cls += ' seat-mine';
-  else if (isReach) cls += ' seat-reachable';
-  else if (!online) cls += ' seat-vacant';
-
+  let fill = 'rgba(255,255,255,.07)', stroke = 'rgba(255,255,255,.6)', sw = 1.4, dash = '';
+  if (isMe)         { fill = '#007BEA'; stroke = '#fff'; sw = 2.6; }
+  else if (isReach) { fill = 'rgba(125,211,252,.18)'; stroke = '#7DD3FC'; sw = 1.8; dash = ' stroke-dasharray="5 3"'; }
+  const opacity = (!isMe && !isReach && !online) ? .4 : 1;
+  const shown = name.length > 9 ? name.slice(0, 8) + '…' : name;
   const title = `${ROLE_LABEL[role]||role}${name ? ' · '+name : ''}${isMe?' (você)':''}`;
 
-  return `<div class="${cls}" title="${esc(title)}">
-    <div class="seat-dot ${online?'online':''}"></div>
-    <div class="seat-label">${esc(role)}</div>
-    <div class="seat-name">${esc(name || (online?'?':''))}</div>
-  </div>`;
+  return `<g class="bp-seat" transform="translate(${x} ${y})" opacity="${opacity}" font-family="Raleway, Arial, sans-serif" text-anchor="middle">
+    <title>${esc(title)}</title>
+    ${isMe ? '<rect x="-26" y="-25" width="52" height="50" rx="14" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="5"/>' : ''}
+    <rect x="-21" y="-20" width="42" height="40" rx="11" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash}/>
+    <rect x="-11" y="-15" width="22" height="4" rx="2" fill="${accent}"/>
+    <text y="8" font-size="16" font-weight="800" fill="#fff">${esc(role)}</text>
+    <text y="35" font-size="10" font-weight="600" fill="#DCE9FF">${esc(shown || (online ? '?' : ''))}</text>
+    ${online ? '<circle cx="15" cy="-13" r="3.3" fill="#22C55E" stroke="#fff" stroke-width="1"/>' : ''}
+  </g>`;
 }
 
 // ─────────────────────────────────────────── RULES BANNER
