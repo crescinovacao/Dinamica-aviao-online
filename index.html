@@ -288,18 +288,13 @@
     /* ═══════════════════════════
        CABIN VISUAL
     ═══════════════════════════ */
-    /* Planta técnica (blueprint) do avião */
-    .blueprint {
-      border-radius: 12px; padding: 6px 4px 2px; max-width: 420px; margin: 0 auto;
-      background:
-        linear-gradient(rgba(255,255,255,.14) 1px, transparent 1px) 0 0 / 80px 80px,
-        linear-gradient(90deg, rgba(255,255,255,.14) 1px, transparent 1px) 0 0 / 80px 80px,
-        linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px) 0 0 / 16px 16px,
-        linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px) 0 0 / 16px 16px,
-        radial-gradient(circle at 50% 35%, #0F45BE 0%, #0A2F9F 50%, #001B71 100%);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.18), 0 6px 18px rgba(0,27,113,.18);
+    /* Avião visto de cima, em proporção real, sobre fundo claro */
+    .cabin-map {
+      border-radius: 12px; padding: 8px 4px; max-width: 520px; margin: 0 auto;
+      background: #F4F7FB; border: 1px solid var(--border);
     }
-    .blueprint svg { display: block; width: 100%; height: auto; }
+    .cabin-map svg { display: block; width: 100%; height: auto; }
+    .cabin-map .plane-art { filter: drop-shadow(0 5px 6px rgba(33,0,0,.14)); }
     .bp-seat { transition: opacity .15s; }
 
     /* Tela da dinâmica mais larga: em telas grandes, mapa à esquerda e conversa à direita */
@@ -310,12 +305,12 @@
     #parRulesBanner { order: 6; } .game-right > .card:last-child { order: 7; }
     @media (min-width: 900px) {
       #pp-game.container { max-width: 1180px; }
-      .game-grid { display: grid; grid-template-columns: minmax(380px, 5fr) minmax(0, 7fr); gap: 0 20px; align-items: start; }
+      .game-grid { display: grid; grid-template-columns: minmax(420px, 6fr) minmax(0, 6fr); gap: 0 20px; align-items: start; }
       .game-left, .game-right { display: block; }
       #parResultCard { grid-column: 1 / -1; }
       .game-grid > #parResultCard { order: 0; }
       .game-left { position: sticky; top: 12px; }
-      .blueprint { max-width: 500px; }
+      .cabin-map { max-width: 560px; }
       .game-right .chat-area { max-height: 420px; min-height: 240px; }
       .game-right .sym-card { width: 96px; height: 100px; font-size: 40px; }
     }
@@ -1760,12 +1755,16 @@ function handlePar(state, parts) {
 
 // ─────────────────────────────────────────── CABIN VISUAL
 
+let lastCabinParts = null;
+let cabinOnline = {};
+
 function renderCabin(parts) {
   if (!myPRole) return;
   const wrap = document.getElementById('parCabinWrap');
   const inner = document.getElementById('parCabinInner');
   if (!wrap || !inner) return;
   wrap.style.display = 'block';
+  lastCabinParts = parts;
 
   // Map role → name
   const rToN = {};
@@ -1777,71 +1776,87 @@ function renderCabin(parts) {
   const presentRoles = allRoles;
   const cPlus        = ROLE_ORDER.slice(3).filter(r => presentRoles.includes(r));
 
-  // Posições (centro de cada poltrona) na planta
-  const POS = { A:[180,130], B1:[152,200], B2:[208,200] };
-  cPlus.forEach((r, i) => { POS[r] = [i % 2 === 0 ? 152 : 208, 270 + Math.floor(i / 2) * 70]; });
+  // Posição de cada poltrona sobre a fuselagem (eixo central em x=260)
+  const POS = { A:[260,114], B1:[248,162], B2:[272,162] };
+  cPlus.forEach((r, i) => { POS[r] = [i % 2 === 0 ? 248 : 272, 212 + Math.floor(i / 2) * 44]; });
 
   const seats = Object.keys(POS).filter(r => presentRoles.includes(r))
     .map(r => mkSeat(r, POS[r][0], POS[r][1], rToN, targets)).join('');
 
-  inner.innerHTML = `<div class="blueprint">
-    <svg viewBox="0 0 360 660" role="img" aria-label="Planta do avião com a posição de cada pessoa">
-      ${BP_PLANE}
+  // Em telas estreitas, aproxima do avião (sem deformar) para as poltronas ficarem legíveis
+  const narrow = inner.clientWidth > 0 && inner.clientWidth < 470;
+  const vb = narrow ? '100 0 320 560' : '0 0 520 560';
+
+  inner.innerHTML = `<div class="cabin-map">
+    <svg viewBox="${vb}" role="img" aria-label="Avião visto de cima com a posição de cada pessoa">
+      ${PLANE_SVG}
       ${seats}
     </svg></div>`;
 }
 
-// Desenho do avião (vista superior, traço branco sobre fundo azul)
-const BP_WING = `<path d="M234 210 C272 240 322 300 352 372 C356 382 350 388 342 385 C300 366 260 340 234 322 Z"/>
-  <path d="M234 300 L330 368 M234 262 L300 322" opacity=".5" stroke-width=".8"/>
-  <path d="M240 222 C276 248 320 304 346 366" opacity=".4" stroke-width=".8"/>
-  <path d="M234 560 C262 566 296 580 316 600 C320 605 316 610 310 609 C282 606 256 600 234 596 Z"/>
-  <g fill="#0B2F9E">
-    <rect x="271" y="226" width="26" height="48" rx="12"/>
-    <ellipse cx="284" cy="232" rx="10" ry="4"/>
-  </g>
-  <ellipse cx="284" cy="232" rx="5" ry="2" fill="none"/>
-  <path d="M284 274 L284 292" opacity=".6"/>`;
-const BP_PLANE = `<g fill="rgba(255,255,255,.05)" stroke="#fff" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round">
-  <path d="M180 24 L180 650" stroke-dasharray="6 4" opacity=".25" fill="none"/>
-  <g>${BP_WING}</g>
-  <g transform="translate(360,0) scale(-1,1)">${BP_WING}</g>
-  <path d="M180 36 C208 36 234 84 234 150 L234 540 C234 575 200 610 190 640 L170 640 C160 610 126 575 126 540 L126 150 C126 84 152 36 180 36 Z" fill="rgba(255,255,255,.07)"/>
-  <path d="M160 82 L165 62 Q180 56 195 62 L200 82 Q180 76 160 82 Z M180 58 L180 79" fill="rgba(255,255,255,.18)"/>
-  <path d="M126 150 L234 150 M126 540 L234 540" opacity=".25" stroke-width=".8" fill="none"/>
-</g>
-<g stroke="#fff" fill="none" stroke-width="1" opacity=".85">
-  <path d="M8 18 L352 18 M8 12 L8 24 M352 12 L352 24 M8 18 l7 -3 v6 z M352 18 l-7 -3 v6 z" fill="#fff"/>
-</g>
-<g font-family="Raleway, Arial, sans-serif" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="2">
-  <text x="180" y="12" font-size="8" opacity=".85" letter-spacing="3">ENVERGADURA</text>
-  <text x="180" y="104" font-size="8" opacity=".7">COCKPIT</text>
-  <text x="180" y="600" font-size="8" opacity=".55">CAUDA</text>
+let cabinResizeT = null;
+window.addEventListener('resize', () => {
+  clearTimeout(cabinResizeT);
+  cabinResizeT = setTimeout(() => { if (lastCabinParts && myPRole) renderCabin(lastCabinParts); }, 150);
+});
+
+// Jato comercial de corredor único (família A320/737) visto de cima, em proporção real:
+// envergadura ≈ comprimento, fuselagem ≈ 11% da envergadura, asas com enflechamento de ~25°.
+const PLANE_WING = `<path d="M232 190 L16 290 Q8 294 10 304 L14 314 L168 290 Q200 284 232 282 Z"/>
+  <path d="M229 199 L20 294" opacity=".45" stroke-width=".8" fill="none"/>
+  <path d="M232 254 L212 258 L168 269 L120 281 L70 293 L30 303" opacity=".45" stroke-width=".8" fill="none"/>
+  <path d="M212 283 L212 259 M168 290 L168 270 M120 297.5 L120 282 M70 305 L70 294" opacity=".35" stroke-width=".8" fill="none"/>`;
+const PLANE_ENGINE = `<path d="M136 204 Q136 190 153 190 Q170 190 170 204 L168 244 Q168 252 153 252 Q138 252 138 244 Z" fill="#E6EAF0"/>
+  <ellipse cx="153" cy="193" rx="12" ry="3.5" fill="#fff" stroke-width="1"/>
+  <ellipse cx="153" cy="251" rx="6.5" ry="2.5" fill="#CBD2DC" stroke-width="1"/>
+  <path d="M141 205 L141 240 M165 205 L165 240" opacity=".35" stroke-width=".8" fill="none"/>`;
+const PLANE_HTP = `<path d="M246 468 L174 518 L177 535 L256 521 Z"/>
+  <path d="M240 478 L184 521" opacity=".35" stroke-width=".8" fill="none"/>`;
+const PLANE_SVG = `<g class="plane-art" fill="#fff" stroke="#210000" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round">
+  <g fill="#F4F6F9">${PLANE_WING}</g>
+  <g transform="translate(520,0) scale(-1,1)" fill="#F4F6F9">${PLANE_WING}</g>
+  <g fill="#F4F6F9">${PLANE_HTP}</g>
+  <g transform="translate(520,0) scale(-1,1)" fill="#F4F6F9">${PLANE_HTP}</g>
+  <path d="M260 18 C244 18 232 52 232 96 L232 392 C232 440 254 500 256 540 L264 540 C266 500 288 440 288 392 L288 96 C288 52 276 18 260 18 Z"/>
+  <g>${PLANE_ENGINE}</g>
+  <g transform="translate(520,0) scale(-1,1)">${PLANE_ENGINE}</g>
+  <rect x="257.5" y="452" width="5" height="80" rx="2.5" fill="#F4F6F9"/>
+  <path d="M247 54 Q260 47 273 54 L271 64 Q260 58 249 64 Z M260 50 L260 60" fill="#CBD5E1" stroke-width="1"/>
+  <path d="M234.5 112 L234.5 382 M285.5 112 L285.5 382" stroke="#94A3B8" stroke-width="2.2" stroke-dasharray="1.6 4.4" fill="none"/>
+  <path d="M230.5 96 h3 v14 h-3 z M286.5 96 h3 v14 h-3 z M230.5 380 h3 v14 h-3 z M286.5 380 h3 v14 h-3 z" fill="#E6EAF0" stroke-width=".9"/>
 </g>`;
 
-let cabinOnline = {};
 function mkSeat(role, x, y, rToN, targets) {
   const isMe    = role === myPRole;
   const isReach = targets.includes(role);
   const name    = rToN[role] || '';
   const online  = !!name && cabinOnline[role] !== false;
-  const accent  = role === 'A' ? '#FBBF24' : (role === 'B1' || role === 'B2') ? '#93C5FD' : '#86EFAC';
 
-  let fill = 'rgba(255,255,255,.07)', stroke = 'rgba(255,255,255,.6)', sw = 1.4, dash = '';
-  if (isMe)         { fill = '#007BEA'; stroke = '#fff'; sw = 2.6; }
-  else if (isReach) { fill = 'rgba(125,211,252,.18)'; stroke = '#7DD3FC'; sw = 1.8; dash = ' stroke-dasharray="5 3"'; }
-  const opacity = (!isMe && !isReach && !online) ? .4 : 1;
+  let fill = '#fff', stroke = '#94A3B8', sw = 1.5, dash = '', tcol = '#475569';
+  if (isMe)         { fill = '#007BEA'; stroke = '#fff'; sw = 1.8; tcol = '#fff'; }
+  else if (isReach) { fill = '#E6F2FF'; stroke = '#007BEA'; sw = 1.7; dash = ' stroke-dasharray="3 2.2"'; tcol = '#0B3E8F'; }
+  const opacity = (!isMe && !isReach && !online) ? .45 : 1;
   const shown = name.length > 9 ? name.slice(0, 8) + '…' : name;
   const title = `${ROLE_LABEL[role]||role}${name ? ' · '+name : ''}${isMe?' (você)':''}`;
 
+  // Nome em uma etiqueta ao lado da poltrona (esquerda, direita ou, para A, à direita da fuselagem)
+  let tag = '';
+  if (shown) {
+    const w = Math.round(shown.length * 5.8 + 12), h = 16;
+    const left = x < 255;
+    const absX = left ? 226 - w : (role === 'A' ? 276 : 294);
+    const relX = absX - x;
+    tag = `<rect x="${relX}" y="-8" width="${w}" height="${h}" rx="8" fill="#fff" fill-opacity=".94" stroke="${isMe ? '#007BEA' : '#CBD5E1'}" stroke-width="${isMe ? 1.4 : 1}"/>
+    <text x="${relX + w / 2}" y="3.4" font-size="10" font-weight="${isMe ? 800 : 600}" fill="#210000">${esc(shown)}</text>`;
+  }
+
   return `<g class="bp-seat" transform="translate(${x} ${y})" opacity="${opacity}" font-family="Raleway, Arial, sans-serif" text-anchor="middle">
     <title>${esc(title)}</title>
-    ${isMe ? '<rect x="-26" y="-25" width="52" height="50" rx="14" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="5"/>' : ''}
-    <rect x="-21" y="-20" width="42" height="40" rx="11" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash}/>
-    <rect x="-11" y="-15" width="22" height="4" rx="2" fill="${accent}"/>
-    <text y="8" font-size="16" font-weight="800" fill="#fff">${esc(role)}</text>
-    <text y="35" font-size="10" font-weight="600" fill="#DCE9FF">${esc(shown || (online ? '?' : ''))}</text>
-    ${online ? '<circle cx="15" cy="-13" r="3.3" fill="#22C55E" stroke="#fff" stroke-width="1"/>' : ''}
+    ${isMe ? '<circle r="15.5" fill="none" stroke="#007BEA" stroke-opacity=".35" stroke-width="3.5"/>' : ''}
+    <circle r="11" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash}/>
+    <text y="3.8" font-size="10.5" font-weight="800" fill="${tcol}">${esc(role)}</text>
+    ${tag}
+    ${online ? '<circle cx="8.5" cy="-8.5" r="3" fill="#22C55E" stroke="#fff" stroke-width="1"/>' : ''}
   </g>`;
 }
 
