@@ -474,6 +474,9 @@
 <body>
 
 <div id="toast"></div>
+<div id="fatalMsg" style="display:none;background:#FEF2F2;color:#DC2626;padding:14px 18px;text-align:center;font-weight:700;font-size:14px">
+  Não foi possível carregar o serviço de conexão. Verifique a internet (ou se a rede bloqueia gstatic.com) e recarregue a página.
+</div>
 
 <!-- Answer Modal -->
 <div id="answerModal" class="modal-bg">
@@ -499,14 +502,18 @@
       <div class="cover-cta-wrap">
         <button class="btn btn-red btn-full" style="font-size:16px;padding:15px 22px" onclick="goFac()">Iniciar dinâmica</button>
       </div>
-      <p class="cover-par-hint">Participante? Acesse o link compartilhado pelo facilitador.</p>
+      <p class="cover-par-hint">Participante? Acesse o link compartilhado pela pessoa facilitadora ou digite o código do seu avião:</p>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+        <input type="text" id="homeCodeInp" maxlength="4" placeholder="Código" style="max-width:120px;text-transform:uppercase;text-align:center;letter-spacing:3px">
+        <button class="btn btn-outline" onclick="goParWithCode()">Entrar</button>
+      </div>
+      <div class="err-msg" id="homeCodeErr"></div>
     </div>
     <hr class="cover-divider">
     <div class="how-card">
       <div class="card-title">Como funciona</div>
-      <p>O facilitador cria a sessão e compartilha os links. Cada participante recebe uma folha com 5 símbolos.
-        A comunicação é hierárquica: A fala só com B1/B2; B1/B2 falam com todos; C em diante fala só com B1/B2.
-        O objetivo é descobrir qual símbolo está em <strong>todas</strong> as folhas.</p>
+      <p>A pessoa facilitadora cria a sessão e compartilha os links. Cada participante recebe uma folha com 5 símbolos.
+        Cada pessoa só pode conversar com algumas das outras, e quem pode falar com quem aparece na sua tela quando a dinâmica começa.</p>
     </div>
   </div>
 </div>
@@ -608,9 +615,9 @@
   <!-- LOBBY state -->
   <div id="pp-lobby" class="container">
     <div class="card" style="text-align:center;padding:40px 20px">
-      <div style="font-size:44px;margin-bottom:16px;opacity:.5">⏳</div>
+      
       <div class="card-title" style="justify-content:center">Aguardando início</div>
-      <p style="color:var(--muted);font-size:14px;line-height:1.6">O facilitador iniciará a dinâmica em breve.</p>
+      <p style="color:var(--muted);font-size:14px;line-height:1.6">A pessoa facilitadora iniciará a dinâmica em breve.</p>
       <div id="parLobbyRoleInfo" class="mt-12"></div>
     </div>
   </div>
@@ -628,9 +635,14 @@
       <div class="timer-lbl" id="parTimerLbl">Em andamento</div>
     </div>
 
+    <div class="card" id="parBriefing" style="display:none">
+      <div class="card-title">Orientação para a Pessoa A</div>
+      <p style="font-size:14px;line-height:1.6">Você é a pessoa que submete a resposta final do grupo. Converse com B1 e B2 para chegar a um consenso e só envie a resposta quando o grupo estiver de acordo.</p>
+    </div>
+
     <div id="parSubmitWrap" style="display:none">
       <button class="submit-hero" onclick="openAnswerModal()">
-        <span class="submit-hero-icon">✅</span>
+        
         <span class="submit-hero-label">Submeter resposta final</span>
         <span class="submit-hero-sub">Toque aqui quando o grupo chegar a um consenso</span>
       </button>
@@ -685,18 +697,19 @@
 
 <!-- ══════════════════════ FIREBASE + JS ══════════════════════ -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script>
 // ─────────────────────────────────────────── CONSTANTS
 
 const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyB_amk-VFel56J4XG8YORjoRX_r0W6lTUg",
-  authDomain:        "crescimentum-dinamicas.firebaseapp.com",
-  databaseURL:       "https://crescimentum-dinamicas-default-rtdb.firebaseio.com",
-  projectId:         "crescimentum-dinamicas",
-  storageBucket:     "crescimentum-dinamicas.firebasestorage.app",
-  messagingSenderId: "53012299693",
-  appId:             "1:53012299693:web:91acaf4d1e8d5f90a3ab24"
+  apiKey:            "AIzaSyBR3G2IpbFsn09_7k-lg3W1k842fWki9gg",
+  authDomain:        "crescimentum-dinamicas-o-b5922.firebaseapp.com",
+  databaseURL:       "https://crescimentum-dinamicas-o-b5922-default-rtdb.firebaseio.com",
+  projectId:         "crescimentum-dinamicas-o-b5922",
+  storageBucket:     "crescimentum-dinamicas-o-b5922.firebasestorage.app",
+  messagingSenderId: "785263066453",
+  appId:             "1:785263066453:web:74771af6c100cfb4c003dc"
 };
 
 const SYMBOLS = [
@@ -822,12 +835,35 @@ function canSee(myRole, msg) {
 
 // ─────────────────────────────────────────── STATE
 
-let db;
-firebase.initializeApp(FIREBASE_CONFIG);
-db = firebase.database();
+const SDK_OK = (typeof firebase !== 'undefined');
+let db = null, auth = null;
+if (SDK_OK) {
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db   = firebase.database();
+  auth = firebase.auth();
+}
 
-let myUid = sessionStorage.getItem('av_uid') || rndId();
-sessionStorage.setItem('av_uid', myUid);
+let myUid = null;          // preenchido por ensureAuth() (login anônimo)
+let authPromise = null;
+
+// Login anônimo: a identidade fica guardada na aba (persistência de sessão),
+// então recarregar a página devolve a mesma pessoa à mesma sala.
+function ensureAuth() {
+  if (!SDK_OK) return Promise.reject(new Error('sdk'));
+  if (authPromise) return authPromise;
+  authPromise = auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
+    .then(() => new Promise(resolve => {
+      const off = auth.onAuthStateChanged(u => { off(); resolve(u); });
+    }))
+    .then(u => u || auth.signInAnonymously().then(c => c.user))
+    .then(u => { myUid = u.uid; return u; })
+    .catch(e => { authPromise = null; throw e; });
+  return authPromise;
+}
+function connErr(e) {
+  console.error(e);
+  return 'Não foi possível conectar ao servidor. Verifique a internet e tente de novo.';
+}
 
 let myRole   = null;  // 'fac' | 'par'
 let myPRole  = null;  // participant role: 'A','B1','B2','C',...
@@ -905,6 +941,21 @@ function seatCls(role) {
 // ─────────────────────────────────────────── HOME
 
 function goFac() { myRole = 'fac'; showScreen('s-fac-setup'); }
+function goParWithCode() {
+  const code = document.getElementById('homeCodeInp').value.trim().toUpperCase();
+  if (!/^[A-Z0-9]{4}$/.test(code)) { showErr('homeCodeErr', 'O código tem 4 caracteres.'); return; }
+  showJoinFor(code);
+}
+function showJoinFor(code) {
+  document.getElementById('codeInp').value = code;
+  const badge = document.getElementById('parJoinRoomBadge');
+  if (badge) badge.innerHTML =
+    `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted)">
+      <span style="font-family:Raleway,sans-serif;font-weight:800;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--navy)">SALA</span>
+      <span style="font-family:Raleway,sans-serif;font-weight:800;font-size:15px;letter-spacing:3px;color:var(--red)">${esc(code)}</span>
+    </div>`;
+  showScreen('s-par-join');
+}
 
 // ─────────────────────────────────────────── LINK HELPERS
 
@@ -923,6 +974,10 @@ async function createSession() {
   if (isBusy) return; isBusy = true;
   const btn = document.getElementById('btnCreate');
   btn.disabled = true; btn.textContent = 'Criando...';
+  try { await ensureAuth(); } catch(e) {
+    showErr('setupErr', connErr(e));
+    isBusy = false; btn.disabled = false; btn.textContent = 'Criar sessão'; return;
+  }
 
   const numPart   = parseInt(document.getElementById('numPartSel').value);
   const timerMin  = parseInt(document.getElementById('timerMinInp').value) || 0;
@@ -1036,61 +1091,73 @@ function updateFacView() {
 
 // ─────────────────────────────────────────── LOBBY RENDER
 
-function renderLobbyPlanes() {
-  document.getElementById('facLobbyPlanes').innerHTML = planeList.map((p, i) => {
-    const cache = planeCache[p.code] || {};
-    const parts = cache.parts || {};
-    const count = Object.keys(parts).length;
-    const sorted = Object.values(parts).sort((a,b) => (a.connectedAt||0)-(b.connectedAt||0));
-    const ready  = count >= p.numParticipants;
+function lobbyRowHtml(p, i) {
+  const cache = planeCache[p.code] || {};
+  const parts = cache.parts || {};
+  const count = Object.keys(parts).length;
+  const sorted = Object.values(parts).sort((a,b) => (a.connectedAt||0)-(b.connectedAt||0));
+  const ready  = count >= p.numParticipants;
+  return `<div class="plane-link-row">
+    <div class="plane-link-title">Avião ${i+1}</div>
+    <div class="plane-code-disp">${esc(p.code)}</div>
+    <div class="plane-link-url">${esc(parLink(p.code))}</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
+      <button class="btn btn-outline btn-sm" onclick="copyLink('${esc(p.code)}',this)">Copiar link</button>
+      <span style="font-size:13px;color:var(--muted)">${count} / ${p.numParticipants} pessoa(s)</span>
+      <button class="btn btn-red btn-sm" ${ready?'':'disabled'} onclick="startPlane('${esc(p.code)}')">Iniciar Avião ${i+1}</button>
+    </div>
+    ${sorted.length > 0
+      ? `<div style="margin-top:8px;font-size:12px;color:var(--muted)">${sorted.map(x => esc(x.name)).join(', ')}</div>`
+      : `<div style="margin-top:8px;font-size:12px;color:var(--muted)">Aguardando participantes...</div>`}
+  </div>`;
+}
 
-    return `<div class="plane-link-row">
-      <div class="plane-link-title">✈ Avião ${i+1}</div>
-      <div class="plane-code-disp">${esc(p.code)}</div>
-      <div class="plane-link-url">${esc(parLink(p.code))}</div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
-        <button class="btn btn-outline btn-sm" onclick="copyLink('${esc(p.code)}',this)">Copiar link</button>
-        <span style="font-size:13px;color:var(--muted)">${count} / ${p.numParticipants} participante(s)</span>
-        <button class="btn btn-red btn-sm" ${ready?'':'disabled'} onclick="startPlane('${esc(p.code)}')">Iniciar Avião ${i+1}</button>
-      </div>
-      ${sorted.length > 0
-        ? `<div style="margin-top:8px;font-size:12px;color:var(--muted)">${sorted.map(x => esc(x.name)).join(', ')}</div>`
-        : `<div style="margin-top:8px;font-size:12px;color:var(--muted)">Aguardando participantes...</div>`}
-    </div>`;
-  }).join('');
+function renderLobbyPlanes() {
+  document.getElementById('facLobbyPlanes').innerHTML =
+    planeList.map((p, i) => lobbyRowHtml(p, i)).join('');
 }
 
 // ─────────────────────────────────────────── START PLANE
 
 async function startPlane(code) {
   if (isBusy) return; isBusy = true;
-  const ref  = planeRefs[code];
-  const plan = planeList.find(p => p.code === code);
-  if (!ref || !plan) { isBusy = false; return; }
+  try {
+    const ref  = planeRefs[code];
+    const plan = planeList.find(p => p.code === code);
+    if (!ref || !plan) return;
 
-  const snap = await ref.child('participants').once('value');
-  const parts = snap.val() || {};
-  const sorted = Object.entries(parts)
-    .sort(([,a],[,b]) => (a.connectedAt||0)-(b.connectedAt||0));
+    const snap = await ref.child('participants').once('value');
+    const parts = snap.val() || {};
+    // Quem entrou primeiro tem prioridade de vaga; os papéis são sorteados (D2)
+    const chosen = Object.entries(parts)
+      .sort(([,a],[,b]) => (a.connectedAt||0)-(b.connectedAt||0))
+      .slice(0, plan.numParticipants);
 
-  if (sorted.length < plan.numParticipants) {
-    toast('Faltam participantes para iniciar.'); isBusy = false; return;
+    if (chosen.length < plan.numParticipants) {
+      toast('Faltam participantes para iniciar.'); return;
+    }
+
+    const vData = PLANE_VERSIONS[plan.version];
+    const roles = ROLE_ORDER.slice(0, plan.numParticipants);
+    for (let i = roles.length - 1; i > 0; i--) {      // Fisher-Yates
+      const j = Math.floor(Math.random() * (i + 1));
+      [roles[i], roles[j]] = [roles[j], roles[i]];
+    }
+    const updates = {};
+    chosen.forEach(([uid], i) => {
+      updates[`participants/${uid}/role`]    = roles[i];
+      updates[`participants/${uid}/symbols`] = vData.roles[roles[i]];
+    });
+    updates['state/phase']    = 'playing';
+    updates['state/timerEnd'] = plan.timerMinutes > 0
+      ? Date.now() + plan.timerMinutes * 60000 : null;
+
+    await ref.update(updates);
+  } catch(e) {
+    toast(connErr(e));
+  } finally {
+    isBusy = false;
   }
-
-  const version   = plan.version;
-  const vData     = PLANE_VERSIONS[version];
-  const roles     = ROLE_ORDER.slice(0, plan.numParticipants);
-  const updates   = {};
-  sorted.slice(0, plan.numParticipants).forEach(([uid], i) => {
-    updates[`participants/${uid}/role`]    = roles[i];
-    updates[`participants/${uid}/symbols`] = vData.roles[roles[i]];
-  });
-  updates['state/phase']   = 'playing';
-  updates['state/timerEnd'] = plan.timerMinutes > 0
-    ? Date.now() + plan.timerMinutes * 60000 : null;
-
-  await ref.update(updates);
-  isBusy = false;
 }
 
 // ─────────────────────────────────────────── FAC GAME TABS
@@ -1101,7 +1168,7 @@ function renderFacTabs() {
     ...planeList.map((p, i) => {
       const st = planeCache[p.code]?.state?.phase || 'lobby';
       return `<button class="tab-btn ${activePlane===p.code?'active':''}" onclick="setActivePlane('${esc(p.code)}')">
-        ✈ Avião ${i+1}<span class="sdot sdot-${st}"></span>
+        Avião ${i+1}<span class="sdot sdot-${st}"></span>
       </button>`;
     })
   ].join('');
@@ -1120,20 +1187,26 @@ function renderActivePlane() {
 
   // ── Overview tab ──
   if (activePlane === null) {
-    content.innerHTML = `<div class="overview-grid">${
+    const waiting = planeList.map((p, i) => ({p, i}))
+      .filter(x => (planeCache[x.p.code]?.state?.phase || 'lobby') === 'lobby');
+    const waitHtml = waiting.length
+      ? `<div class="card-title" style="margin:4px 0 8px">Aguardando início</div>${waiting.map(x => lobbyRowHtml(x.p, x.i)).join('')}`
+      : '';
+    content.innerHTML = waitHtml + `<div class="overview-grid">${
       planeList.map((p, i) => {
+        if ((planeCache[p.code]?.state?.phase || 'lobby') === 'lobby') return '';
         const cache  = planeCache[p.code] || {};
         const st     = cache.state?.phase || 'lobby';
         const count  = Object.keys(cache.parts||{}).length;
         const ansId  = cache.state?.answer;
         const ansSym = ansId ? SYM[ansId] : null;
         return `<div class="overview-card" onclick="setActivePlane('${esc(p.code)}')">
-          <div class="overview-card-title">✈ Avião ${i+1}<span class="sdot sdot-${st}" style="margin-left:8px"></span></div>
+          <div class="overview-card-title">Avião ${i+1}<span class="sdot sdot-${st}" style="margin-left:8px"></span></div>
           <div class="overview-card-meta">${count} / ${p.numParticipants} pessoas</div>
           <div style="font-size:12px;color:var(--muted);margin-top:4px">${
             st==='lobby' ? 'Aguardando' : st==='playing' ? 'Em andamento' : 'Encerrado'
           }</div>
-          ${ansSym ? `<div style="font-size:24px;margin-top:6px;color:var(--red)">${esc(ansSym.ch)} <span style="font-size:12px;color:${cache.state?.correct?'var(--green)':'var(--danger)'}">${cache.state?.correct?'✅':'❌'}</span></div>` : ''}
+          ${ansSym ? `<div style="font-size:24px;margin-top:6px;color:var(--red)">${esc(ansSym.ch)} <span style="font-size:12px;color:${cache.state?.correct?'var(--green)':'var(--danger)'}">${cache.state?.correct?'Correto':'Incorreto'}</span></div>` : ''}
         </div>`;
       }).join('')
     }</div>`;
@@ -1146,6 +1219,8 @@ function renderActivePlane() {
   const state = cache.state || {};
   const parts = cache.parts || {};
   const idx   = planeList.indexOf(p);
+  if (!p) { content.innerHTML = ''; return; }
+  if ((state.phase || 'lobby') === 'lobby') { content.innerHTML = lobbyRowHtml(p, idx); return; }
   const parArr = Object.entries(parts).sort(([,a],[,b]) => (a.connectedAt||0)-(b.connectedAt||0));
 
   // Role maps for this plane
@@ -1167,7 +1242,7 @@ function renderActivePlane() {
       <div style="text-align:center">
         <div style="font-size:52px;color:var(--red);margin:4px">${esc(sym?.ch||'?')}</div>
         <div class="${state.correct?'result-ok':'result-err'}">
-          ${state.correct ? '✅ CORRETO!' : '❌ INCORRETO'}
+          ${state.correct ? 'CORRETO' : 'INCORRETO'}
           — submetido por ${esc(ROLE_LABEL[state.answeredBy]||state.answeredBy||'?')}
         </div>
       </div>
@@ -1213,7 +1288,7 @@ function renderActivePlane() {
         <div style="font-size:64px;font-weight:900;color:var(--red)">${esc(correctSym?.ch||'?')}</div>
         <div style="font-size:14px;color:var(--muted);margin-bottom:10px">${esc(correctSym?.name||'')}</div>
         ${state.answer
-          ? `<div class="${state.correct?'result-ok':'result-err'}">${state.correct?'✅ O grupo acertou!':'❌ O grupo errou.'}</div>`
+          ? `<div class="${state.correct?'result-ok':'result-err'}">${state.correct?'O grupo acertou!':'O grupo errou.'}</div>`
           : `<div class="result-err">Encerrado sem resposta submetida.</div>`}
       </div>
     </div>`;
@@ -1282,40 +1357,66 @@ async function joinRoom() {
 
   const code = document.getElementById('codeInp').value.trim().toUpperCase();
   const name = document.getElementById('nameInp').value.trim();
-  if (!code || code.length !== 4) { joinFail('Link inválido ou expirado. Peça um novo link ao facilitador.'); return; }
+  if (!code || code.length !== 4) { joinFail('Link inválido ou expirado. Peça um novo link à pessoa facilitadora.'); return; }
   if (!name) { joinFail('Digite seu nome.'); return; }
 
-  const snap = await db.ref(`aviao/${code}`).once('value');
-  if (!snap.exists()) { joinFail('Sala não encontrada. Verifique o link com o facilitador.'); return; }
-  const room = snap.val();
+  try {
+    await ensureAuth();
+    const snap = await db.ref(`aviao/${code}`).once('value');
+    if (!snap.exists()) { joinFail('Sala não encontrada. Verifique o link com a pessoa facilitadora.'); return; }
+    const room = snap.val();
 
-  if (Date.now() - (room.meta?.createdAt||0) > 24*3600*1000) { joinFail('Esta sala expirou.'); return; }
-  if (room.state?.phase === 'ended') { joinFail('Esta sessão já foi encerrada.'); return; }
+    if (Date.now() - (room.meta?.createdAt||0) > 24*3600*1000) { joinFail('Esta sala expirou.'); return; }
+    if (room.state?.phase === 'ended') { joinFail('Esta sessão já foi encerrada.'); return; }
 
-  const parts = room.participants || {};
-  const count = Object.keys(parts).filter(u => u !== myUid).length;
-  if (count >= (room.meta?.numParticipants||0)) { joinFail('Sala cheia.'); return; }
+    const parts  = room.participants || {};
+    const already = !!parts[myUid];           // reconexão: mesma pessoa, mesmo papel
+    const count  = Object.keys(parts).length;
+    if (!already && room.state?.phase === 'playing') { joinFail('Esta dinâmica já começou. Peça ajuda à pessoa facilitadora.'); return; }
+    if (!already && count >= (room.meta?.numParticipants||0)) { joinFail('Sala cheia.'); return; }
 
-  roomCode        = code;
-  myName          = name;
-  myRole          = 'par';
-  roomRef         = db.ref(`aviao/${code}`);
-  cfgNumPart      = room.meta?.numParticipants || 6;
-  cfgTimerMin     = room.meta?.timerMinutes    || 0;
-  cfgPlaneVersion = room.meta?.planeVersion    || 1;
+    roomCode        = code;
+    myName          = name;
+    myRole          = 'par';
+    roomRef         = db.ref(`aviao/${code}`);
+    cfgNumPart      = room.meta?.numParticipants || 6;
+    cfgTimerMin     = room.meta?.timerMinutes    || 0;
+    cfgPlaneVersion = room.meta?.planeVersion    || 1;
+    if (already && parts[myUid].role) myPRole = parts[myUid].role;
 
-  sessionStorage.setItem('av_room', code);
-  sessionStorage.setItem('av_role', 'par');
-  sessionStorage.setItem('av_name', name);
+    sessionStorage.setItem('av_room', code);
+    sessionStorage.setItem('av_role', 'par');
+    sessionStorage.setItem('av_name', name);
 
-  await roomRef.child(`participants/${myUid}`).set({
-    name, role:null, symbols:null, connectedAt: Date.now()
-  });
-  roomRef.child(`participants/${myUid}`).onDisconnect().remove();
+    await registerPresence(!already);
+  } catch(e) {
+    joinFail(connErr(e)); return;
+  }
 
   isBusy = false;
   showScreen('s-par-game');
   listenRoom();
+}
+
+// Presença: no lobby quem sai libera a vaga; depois do início a pessoa só fica "offline"
+// e mantém papel e folha, para poder voltar (P0-2).
+let presenceMode = null;  // 'lobby' | 'game'
+async function registerPresence(isNew, phase) {
+  const meRef = roomRef.child(`participants/${myUid}`);
+  const inGame = phase === 'playing' || phase === 'ended';
+  if (isNew) {
+    await meRef.set({ name:myName, role:null, symbols:null, online:true, connectedAt:Date.now() });
+  } else {
+    await meRef.update({ name:myName, online:true });
+  }
+  await meRef.onDisconnect().cancel();
+  if (inGame || !isNew && myPRole) {
+    meRef.onDisconnect().update({ online:false });
+    presenceMode = 'game';
+  } else {
+    meRef.onDisconnect().remove();
+    presenceMode = 'lobby';
+  }
 }
 
 function joinFail(msg) {
@@ -1330,12 +1431,17 @@ function joinFail(msg) {
 function buildToSelect() {
   const targets = getTargets(myPRole, allRoles);
   const sel = document.getElementById('chatToSel');
-  sel.innerHTML = targets.map(r => {
+  const opts = targets.map(r => {
     const uid  = roleToUid[r];
     const name = uid ? uidToName[uid] : '';
-    const lbl  = name ? `${ROLE_LABEL[r]||r} · ${name}` : (ROLE_LABEL[r]||r);
-    return `<option value="${esc(r)}">${esc(lbl)}</option>`;
-  }).join('');
+    return { r, lbl: name ? `${ROLE_LABEL[r]||r} · ${name}` : (ROLE_LABEL[r]||r) };
+  });
+  const sig = JSON.stringify(opts);
+  if (sel.dataset.sig === sig) return;           // nada mudou: não mexe no campo
+  const keep = sel.value;
+  sel.innerHTML = opts.map(o => `<option value="${esc(o.r)}">${esc(o.lbl)}</option>`).join('');
+  sel.dataset.sig = sig;
+  if (keep && targets.includes(keep)) sel.value = keep;
 }
 
 function sendMsg() {
@@ -1379,18 +1485,23 @@ function pickAns(id, el) {
   document.getElementById('btnConfirm').disabled = false;
 }
 async function confirmAnswer() {
-  if (!selectedAns || isBusy) return; isBusy = true;
-  // Compare against correct answer for this plane's version
-  const correctAns = PLANE_VERSIONS[cfgPlaneVersion]?.answer || 'amp';
-  const correct    = selectedAns === correctAns;
-  await roomRef.update({
-    'state/answer':     selectedAns,
-    'state/correct':    correct,
-    'state/answeredBy': myPRole,
-    'state/phase':      'ended',
-  });
-  closeAnswerModal();
-  isBusy = false;
+  if (!selectedAns || isBusy) return;
+  if (myPRole !== 'A') { toast('Apenas a Pessoa A submete a resposta final.'); return; }
+  isBusy = true;
+  try {
+    const correctAns = PLANE_VERSIONS[cfgPlaneVersion]?.answer || 'amp';
+    await roomRef.update({
+      'state/answer':     selectedAns,
+      'state/correct':    selectedAns === correctAns,
+      'state/answeredBy': myPRole,
+      'state/phase':      'ended',
+    });
+    closeAnswerModal();
+  } catch(e) {
+    toast(connErr(e));
+  } finally {
+    isBusy = false;
+  }
 }
 
 // ─────────────────────────────────────────── ROOM LISTENER (participant)
@@ -1460,6 +1571,19 @@ function handlePar(state, parts) {
   document.getElementById('pp-lobby').style.display = 'none';
   document.getElementById('pp-game').style.display  = 'block';
 
+  // O jogo começou: quem cair agora continua com papel e folha (P0-2)
+  if (presenceMode === 'lobby' && me.role && roomRef) {
+    const meRef = roomRef.child(`participants/${myUid}`);
+    meRef.onDisconnect().cancel()
+      .then(() => meRef.onDisconnect().update({ online:false }))
+      .catch(() => {});
+    presenceMode = 'game';
+  }
+
+  // Briefing da Pessoa A (P0-1)
+  const brief = document.getElementById('parBriefing');
+  if (brief) brief.style.display = (myPRole === 'A' && phase === 'playing') ? 'block' : 'none';
+
   // Symbols (render once)
   if (me.symbols && document.getElementById('parSymGrid').childElementCount === 0) {
     document.getElementById('parSymGrid').innerHTML = me.symbols.map(symHtml).join('');
@@ -1479,15 +1603,16 @@ function handlePar(state, parts) {
   // Timer
   startTimer(state.timerEnd, 'parTimerDisp', 'parTimerLbl', 'parTimerCard');
 
-  // Submit CTA — always visible for ALL participants during playing
+  // Submit CTA — somente a Pessoa A
   document.getElementById('parSubmitWrap').style.display =
-    phase === 'playing' ? 'block' : 'none';
+    (phase === 'playing' && myPRole === 'A') ? 'block' : 'none';
 
   if (phase === 'ended') {
     clearInterval(timerIntvl);
     document.getElementById('chatSendRow').style.display   = 'none';
     document.getElementById('parSymCard').style.display    = 'none';
     document.getElementById('parRulesBanner').style.display= 'none';
+    if (brief) brief.style.display = 'none';
     document.getElementById('parCabinWrap').style.display  = 'none';
     document.getElementById('parSubmitWrap').style.display = 'none';
 
@@ -1498,7 +1623,7 @@ function handlePar(state, parts) {
       const sym = SYM[state.answer];
       html = `<div style="font-size:52px;color:var(--red);margin:8px 0">${esc(sym?.ch||'?')}</div>
         <div class="${state.correct?'result-ok':'result-err'}">
-          ${state.correct ? '✅ O grupo acertou! Resposta correta.' : '❌ O grupo errou.'}
+          ${state.correct ? 'O grupo acertou! Resposta correta.' : 'O grupo errou.'}
         </div>`;
       if (!state.correct) {
         html += `<div style="margin-top:14px;font-size:14px">O símbolo correto era:<br>
@@ -1535,7 +1660,7 @@ function renderCabin(parts) {
   const cPlus        = ROLE_ORDER.slice(3).filter(r => presentRoles.includes(r));
 
   let html = `<div class="cabin-outer">
-    <div class="cabin-nose">✈&nbsp;&nbsp;COCKPIT</div>
+    <div class="cabin-nose">COCKPIT</div>
     <div class="cabin-rows">`;
 
   // Row A
@@ -1588,9 +1713,9 @@ function mkSeat(role, rToN, targets) {
 function buildRulesHtml(role) {
   if (!role) return '';
   const targets = getTargets(role, allRoles);
-  if (targets.length === 0) return `📋 <strong>Você é ${esc(ROLE_LABEL[role]||role)}.</strong> Aguarde a dinâmica iniciar.`;
+  if (targets.length === 0) return `<strong>Você é ${esc(ROLE_LABEL[role]||role)}.</strong> Aguarde a dinâmica iniciar.`;
   const tNames = targets.map(r => `<strong>${esc(ROLE_LABEL[r]||r)}</strong>`).join(', ');
-  return `📋 <strong>Você é ${esc(ROLE_LABEL[role]||role)}.</strong> Pode se comunicar com: ${tNames}.`;
+  return `<strong>Você é ${esc(ROLE_LABEL[role]||role)}.</strong> Pode se comunicar com: ${tNames}.`;
 }
 
 // ─────────────────────────────────────────── TIMER
@@ -1633,7 +1758,7 @@ function renderMsg(msg) {
   chat.appendChild(b);
   chat.scrollTop = chat.scrollHeight;
 
-  if (!isOut) toast(`💬 Nova mensagem de ${from}`);
+  if (!isOut) toast(`Nova mensagem de ${from}`);
 }
 
 // ─────────────────────────────────────────── SESSION RESUME
@@ -1643,26 +1768,28 @@ async function resumeSession() {
   const rCode = sessionStorage.getItem('av_room');
   const role  = sessionStorage.getItem('av_role');
 
+  try { await ensureAuth(); } catch(e) { toast(connErr(e)); return; }
+
   if (role === 'fac' && sCode) {
     try {
       const snap = await db.ref(`aviao_sessions/${sCode}`).once('value');
       if (!snap.exists()) { clearAv(); return; }
       const sess = snap.val();
       if (Date.now() - (sess.meta?.createdAt||0) > 24*3600*1000) { clearAv(); return; }
+      if (sess.meta?.facilitatorId !== myUid) { clearAv(); return; }
 
       sessionCode = sCode;
       myRole = 'fac';
       document.getElementById('lobbySessionBadge').textContent = `Sessão ${sCode}`;
       document.getElementById('facGameBadge').textContent = `Sessão ${sCode}`;
 
-      // Reconstruct plane list from session
       planeList = Object.entries(sess.planes||{})
         .sort(([a],[b]) => Number(a)-Number(b))
         .map(([,v]) => v);
 
       showScreen('s-fac-lobby');
       listenAllPlanes();
-    } catch(e) { clearAv(); }
+    } catch(e) { console.error(e); clearAv(); }
 
   } else if (role === 'par' && rCode) {
     try {
@@ -1672,25 +1799,24 @@ async function resumeSession() {
       if (Date.now() - (room.meta?.createdAt||0) > 24*3600*1000) { clearAv(); return; }
       if (room.state?.phase === 'ended') { clearAv(); return; }
 
+      myName = sessionStorage.getItem('av_name');
+      const me = room.participants?.[myUid];
+      if (!myName || !me) { clearAv(); return; }   // vaga já liberada: volta ao início
+
       roomCode        = rCode;
       myRole          = 'par';
       roomRef         = db.ref(`aviao/${rCode}`);
       cfgNumPart      = room.meta?.numParticipants || 6;
       cfgTimerMin     = room.meta?.timerMinutes    || 0;
       cfgPlaneVersion = room.meta?.planeVersion    || 1;
-      myName          = sessionStorage.getItem('av_name');
-      if (!myName) { clearAv(); return; }
+      if (me.role) myPRole = me.role;
 
-      const me = room.participants?.[myUid];
-      if (me?.role) myPRole = me.role;
-
-      await roomRef.child(`participants/${myUid}`).update({ name:myName, connectedAt:Date.now() });
-      roomRef.child(`participants/${myUid}`).onDisconnect().remove();
+      await registerPresence(false, room.state?.phase);
 
       if (myPRole) document.getElementById('parRoleHdr').textContent = ROLE_LABEL[myPRole] || '—';
       showScreen('s-par-game');
       listenRoom();
-    } catch(e) { clearAv(); }
+    } catch(e) { console.error(e); clearAv(); }
   }
 }
 
@@ -1701,34 +1827,27 @@ function clearAv() {
 // ─────────────────────────────────────────── INIT
 
 window.addEventListener('DOMContentLoaded', () => {
+  if (!SDK_OK) { document.getElementById('fatalMsg').style.display = 'block'; return; }
+
   const urlCode = new URLSearchParams(location.search).get('code');
   const sCode   = sessionStorage.getItem('av_session');
   const rCode   = sessionStorage.getItem('av_room');
   const role    = sessionStorage.getItem('av_role');
+  const code    = urlCode ? urlCode.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4) : '';
 
-  if (urlCode) {
-    // Participant arrived via shared link — preenche código oculto e mostra badge
-    const code = urlCode.toUpperCase().slice(0,4);
-    document.getElementById('codeInp').value = code;
-    const badge = document.getElementById('parJoinRoomBadge');
-    if (badge) badge.innerHTML =
-      `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted)">
-        <span style="font-family:Raleway,sans-serif;font-weight:800;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--navy)">SALA</span>
-        <span style="font-family:Raleway,sans-serif;font-weight:800;font-size:15px;letter-spacing:3px;color:var(--red)">${code}</span>
-      </div>`;
-    showScreen('s-par-join');
+  // Se esta aba já está numa sala e o link é o da mesma sala, retoma em vez de pedir o nome de novo
+  if (role === 'par' && rCode && (!code || code === rCode)) {
+    resumeSession();
+  } else if (code) {
+    showJoinFor(code);
   } else if (sCode || (rCode && role)) {
     resumeSession();
   }
-  // else: s-home is already active
 });
 
 window.addEventListener('beforeunload', e => {
   if (roomCode || sessionCode) { e.preventDefault(); e.returnValue = ''; }
 });
 </script>
-</body>
-</html>
-
 </body>
 </html>
