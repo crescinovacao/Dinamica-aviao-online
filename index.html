@@ -983,9 +983,10 @@ async function createSession() {
   const timerMin  = parseInt(document.getElementById('timerMinInp').value) || 0;
   const numPlanes = parseInt(document.getElementById('numPlanesSel').value);
 
+  let sCode, tries = 0;
+  const planes = [];
   try {
     // Generate unique session code
-    let sCode, tries = 0;
     do {
       sCode = rndCode();
       const s = await db.ref(`aviao_sessions/${sCode}`).once('value');
@@ -997,7 +998,6 @@ async function createSession() {
     sessionStorage.setItem('av_role', 'fac');
 
     // Create one room per airplane (each gets a sequential version 1-5)
-    const planes = [];
     for (let i = 0; i < numPlanes; i++) {
       let code, t2 = 0;
       do {
