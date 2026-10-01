@@ -579,6 +579,16 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation: none !important; transition: none !important; }
     }
+
+.qr-panel { display:flex; align-items:center; gap:16px; margin:0 0 14px; padding:14px; border:1px solid var(--border); border-radius:12px; background:#fff; }
+.qr-panel .qr-img { flex:none; line-height:0; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.qr-panel .qr-img svg { display:block; width:168px; height:168px; max-width:100%; }
+.qr-panel p { margin:0; font-size:14px; color:var(--muted); line-height:1.45; }
+@media (max-width:480px){ .qr-panel { flex-direction:column; text-align:center; } }
+
+.gabarito { margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
+.gab-box { display:flex; align-items:center; gap:12px; margin-top:10px; padding:12px; border-radius:12px; background:#F5F7FA; border:1px solid var(--border); }
+.gab-glyph { font-size:34px; line-height:1; flex:none; }
 </style>
 </head>
 <body>
@@ -1331,6 +1341,188 @@ function updateFacView() {
   }
 }
 
+// ─────────────────────────────────────────── QR CODE (gerador embutido, modo byte, correção M, versões 1 a 10)
+
+const QR_ECC_PER_BLOCK = [0, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26];   // nível M
+const QR_NUM_BLOCKS    = [0,  1,  1,  1,  2,  2,  4,  4,  4,  5,  5];
+
+function qrGfMul(x, y) {
+  let z = 0;
+  for (let i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; }
+  return z;
+}
+function qrRsDivisor(degree) {
+  const r = new Array(degree).fill(0); r[degree - 1] = 1;
+  let root = 1;
+  for (let i = 0; i < degree; i++) {
+    for (let j = 0; j < r.length; j++) { r[j] = qrGfMul(r[j], root); if (j + 1 < r.length) r[j] ^= r[j + 1]; }
+    root = qrGfMul(root, 0x02);
+  }
+  return r;
+}
+function qrRsRemainder(data, divisor) {
+  const r = divisor.map(() => 0);
+  for (const b of data) {
+    const f = b ^ r.shift(); r.push(0);
+    divisor.forEach((c, i) => { r[i] ^= qrGfMul(c, f); });
+  }
+  return r;
+}
+function qrRawModules(ver) {
+  let n = (16 * ver + 128) * ver + 64;
+  if (ver >= 2) { const a = Math.floor(ver / 7) + 2; n -= (25 * a - 10) * a - 55; if (ver >= 7) n -= 36; }
+  return n;
+}
+function qrAlignPositions(ver) {
+  if (ver === 1) return [];
+  const size = ver * 4 + 17, num = Math.floor(ver / 7) + 2;
+  const step = Math.ceil((ver * 4 + 4) / (num * 2 - 2)) * 2;
+  const res = [6];
+  for (let pos = size - 7; res.length < num; pos -= step) res.splice(1, 0, pos);
+  return res;
+}
+
+// Devolve a matriz de módulos (true = escuro) para o texto, ou null se não couber (> versão 10)
+function qrMatrix(text) {
+  const bytes = Array.from(new TextEncoder().encode(text));
+  let ver = 0, dataCap = 0;
+  for (let v = 1; v <= 10; v++) {
+    dataCap = Math.floor(qrRawModules(v) / 8) - QR_ECC_PER_BLOCK[v] * QR_NUM_BLOCKS[v];
+    const ccBits = v < 10 ? 8 : 16;
+    if (4 + ccBits + bytes.length * 8 <= dataCap * 8) { ver = v; break; }
+  }
+  if (!ver) return null;
+  const size = ver * 4 + 17;
+
+  // Fluxo de bits: modo (byte), tamanho, dados, terminador e preenchimento
+  const bits = [];
+  const put = (val, len) => { for (let i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
+  put(4, 4); put(bytes.length, ver < 10 ? 8 : 16); bytes.forEach(b => put(b, 8));
+  put(0, Math.min(4, dataCap * 8 - bits.length));
+  put(0, (8 - bits.length % 8) % 8);
+  for (let pad = 0xEC; bits.length < dataCap * 8; pad ^= 0xEC ^ 0x11) put(pad, 8);
+  const data = [];
+  for (let i = 0; i < bits.length; i += 8) { let b = 0; for (let j = 0; j < 8; j++) b = (b << 1) | bits[i + j]; data.push(b); }
+
+  // Blocos de dados com correção de erros, intercalados
+  const nb = QR_NUM_BLOCKS[ver], eccLen = QR_ECC_PER_BLOCK[ver];
+  const rawCw = Math.floor(qrRawModules(ver) / 8), nShort = nb - rawCw % nb, shortLen = Math.floor(rawCw / nb);
+  const div = qrRsDivisor(eccLen), blocks = [];
+  for (let i = 0, k = 0; i < nb; i++) {
+    const dat = data.slice(k, k + shortLen - eccLen + (i < nShort ? 0 : 1)); k += dat.length;
+    const ecc = qrRsRemainder(dat, div);
+    if (i < nShort) dat.push(0);
+    blocks.push(dat.concat(ecc));
+  }
+  const all = [];
+  for (let i = 0; i < blocks[0].length; i++)
+    blocks.forEach((blk, j) => { if (i !== shortLen - eccLen || j >= nShort) all.push(blk[i]); });
+
+  // Matriz e padrões de função
+  const mod = Array.from({ length: size }, () => new Array(size).fill(false));
+  const fn  = Array.from({ length: size }, () => new Array(size).fill(false));
+  const setF = (x, y, dark) => { mod[y][x] = dark; fn[y][x] = true; };
+  for (let i = 0; i < size; i++) { setF(6, i, i % 2 === 0); setF(i, 6, i % 2 === 0); }
+  [[3, 3], [size - 4, 3], [3, size - 4]].forEach(([cx, cy]) => {
+    for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+      const x = cx + dx, y = cy + dy, d = Math.max(Math.abs(dx), Math.abs(dy));
+      if (x >= 0 && x < size && y >= 0 && y < size) setF(x, y, d !== 2 && d !== 4);
+    }
+  });
+  const al = qrAlignPositions(ver);
+  al.forEach((cy, i) => al.forEach((cx, j) => {
+    if ((i === 0 && j === 0) || (i === 0 && j === al.length - 1) || (i === al.length - 1 && j === 0)) return;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) setF(cx + dx, cy + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+  }));
+  const drawFormat = mask => {
+    let rem = mask;                                   // nível M = 0, então dados = máscara
+    for (let i = 0; i < 10; i++) rem = (rem << 1) ^ ((rem >>> 9) * 0x537);
+    const f = ((mask << 10) | rem) ^ 0x5412, bit = i => ((f >>> i) & 1) !== 0;
+    for (let i = 0; i <= 5; i++) setF(8, i, bit(i));
+    setF(8, 7, bit(6)); setF(8, 8, bit(7)); setF(7, 8, bit(8));
+    for (let i = 9; i < 15; i++) setF(14 - i, 8, bit(i));
+    for (let i = 0; i < 8; i++) setF(size - 1 - i, 8, bit(i));
+    for (let i = 8; i < 15; i++) setF(8, size - 15 + i, bit(i));
+    setF(8, size - 8, true);
+  };
+  drawFormat(0);
+  if (ver >= 7) {
+    let rem = ver;
+    for (let i = 0; i < 12; i++) rem = (rem << 1) ^ ((rem >>> 11) * 0x1F25);
+    const v = (ver << 12) | rem;
+    for (let i = 0; i < 18; i++) {
+      const b = ((v >>> i) & 1) !== 0, a = size - 11 + i % 3, c = Math.floor(i / 3);
+      setF(a, c, b); setF(c, a, b);
+    }
+  }
+
+  // Posiciona os codewords em zigue-zague
+  for (let i = 0, right = size - 1; right >= 1; right -= 2) {
+    if (right === 6) right = 5;
+    for (let vert = 0; vert < size; vert++) for (let j = 0; j < 2; j++) {
+      const x = right - j, up = ((right + 1) & 2) === 0, y = up ? size - 1 - vert : vert;
+      if (!fn[y][x] && i < all.length * 8) { mod[y][x] = ((all[i >>> 3] >>> (7 - (i & 7))) & 1) !== 0; i++; }
+    }
+  }
+
+  // Escolhe a máscara de menor penalidade
+  const maskFn = [
+    (x, y) => (x + y) % 2 === 0, (x, y) => y % 2 === 0, (x, y) => x % 3 === 0, (x, y) => (x + y) % 3 === 0,
+    (x, y) => (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0, (x, y) => x * y % 2 + x * y % 3 === 0,
+    (x, y) => (x * y % 2 + x * y % 3) % 2 === 0, (x, y) => ((x + y) % 2 + x * y % 3) % 2 === 0,
+  ];
+  const applyMask = m => { for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (!fn[y][x] && maskFn[m](x, y)) mod[y][x] = !mod[y][x]; };
+  const penalty = () => {
+    let p = 0;
+    const lines = [];
+    for (let y = 0; y < size; y++) lines.push(mod[y].map(b => b ? '1' : '0').join(''));
+    for (let x = 0; x < size; x++) lines.push(mod.map(r => r[x] ? '1' : '0').join(''));
+    lines.forEach(s => {
+      const runs = s.match(/(.)\1*/g) || [];
+      runs.forEach(r => { if (r.length >= 5) p += 3 + (r.length - 5); });
+      for (let i = 0; i + 11 <= s.length; i++) { const w = s.substr(i, 11); if (w === '10111010000' || w === '00001011101') p += 40; }
+    });
+    for (let y = 0; y < size - 1; y++) for (let x = 0; x < size - 1; x++) {
+      const c = mod[y][x]; if (c === mod[y][x + 1] && c === mod[y + 1][x] && c === mod[y + 1][x + 1]) p += 3;
+    }
+    let dark = 0; mod.forEach(r => r.forEach(b => { if (b) dark++; }));
+    p += (Math.ceil(Math.abs(dark * 20 - size * size * 10) / (size * size)) - 1) * 10;
+    return p;
+  };
+  let best = 0, bestPen = Infinity;
+  for (let m = 0; m < 8; m++) {
+    applyMask(m); drawFormat(m);
+    const p = penalty(); if (p < bestPen) { bestPen = p; best = m; }
+    applyMask(m);
+  }
+  applyMask(best); drawFormat(best);
+  return mod;
+}
+
+// SVG pronto para inserir na página (fundo branco com margem de silêncio)
+function qrSvg(text, px, label) {
+  const m = qrMatrix(text);
+  if (!m) return '';
+  const n = m.length, q = 3, tot = n + q * 2;
+  let d = '';
+  m.forEach((row, y) => { let x = 0; while (x < n) { if (row[x]) { let w = 1; while (x + w < n && row[x + w]) w++; d += `M${x + q} ${y + q}h${w}v1h-${w}z`; x += w; } else x++; } });
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${tot} ${tot}" width="${px}" height="${px}" role="img" aria-label="${esc(label || 'QR code')}" shape-rendering="crispEdges"><rect width="${tot}" height="${tot}" fill="#fff"/><path d="${d}" fill="#210000"/></svg>`;
+}
+
+const qrCache = {};
+function qrSvgCached(text, px, label) {
+  const k = text + '|' + px;
+  return qrCache[k] || (qrCache[k] = qrSvg(text, px, label));
+}
+let qrOpen = {};          // código da sala → painel do QR aberto (sobrevive às atualizações da lista)
+function toggleQr(code) {
+  qrOpen[code] = !qrOpen[code];
+  renderLobbyPlanes();
+  if (qrOpen[code]) {
+    const b = document.querySelector(`[data-qr-btn="${code}"]`); if (b) b.focus({ preventScroll: true });
+  }
+}
+
 // ─────────────────────────────────────────── LOBBY RENDER
 
 function copyText(text, btnEl) {
@@ -1365,7 +1557,12 @@ function lobbyRowHtml(p, i) {
     <div class="plane-actions">
       <button class="btn btn-outline btn-sm" onclick="copyLink('${c}',this)">Copiar link</button>
       <button class="btn btn-outline btn-sm" onclick="copyCode('${c}',this)">Copiar código</button>
+      <button class="btn btn-outline btn-sm" data-qr-btn="${c}" aria-expanded="${!!qrOpen[p.code]}" onclick="toggleQr('${c}')">${qrOpen[p.code] ? 'Ocultar QR code' : 'QR code'}</button>
     </div>
+    ${qrOpen[p.code] ? `<div class="qr-panel">
+      <div class="qr-img">${qrSvgCached(parLink(p.code), 168, 'QR code para entrar no Avião ' + (i+1))}</div>
+      <p>Aponte a câmera do celular para entrar direto no <b>Avião ${i+1}</b>.</p>
+    </div>` : ''}
     <div class="progress">
       <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${count}" aria-label="Pessoas na sala">
         <span style="width:${pct}%"></span><i style="left:calc(${minPct}% - 1px)" title="Mínimo para iniciar"></i>
@@ -1454,6 +1651,9 @@ const PHASE_LABEL = { lobby:'Aguardando início', playing:'Em andamento', ended:
 
 // ─────────────────────────────────────────── RENDER ACTIVE PLANE
 
+const gabOpen = {};        // código da sala → gabarito visível para a facilitação
+function toggleGabarito(code) { gabOpen[code] = !gabOpen[code]; renderActivePlane(); }
+
 function renderActivePlane() {
   const content = document.getElementById('facPlaneContent');
 
@@ -1523,12 +1723,24 @@ function renderActivePlane() {
   } else {
     controls = `<p class="status-note" style="margin:0">Resultado revelado ao grupo.</p>`;
   }
+  // Gabarito: só durante a rodada (depois de encerrada, o resultado já mostra o símbolo correto)
+  let gabarito = '';
+  if (phase === 'playing') {
+    const open = !!gabOpen[activePlane];
+    const gs = SYM[PLANE_VERSIONS[p.version]?.answer];
+    gabarito = `<div class="gabarito">
+      <button type="button" class="btn btn-outline btn-sm btn-full" aria-expanded="${open}" onclick="toggleGabarito('${code}')">${open ? 'Ocultar gabarito' : 'Ver gabarito'}</button>
+      ${open ? `<div class="gab-box"><span class="gab-glyph" aria-hidden="true">${esc(gs?.ch||'?')}</span>
+        <div><b>${esc(gs?.name||'')}</b><div class="small muted">Símbolo que está em todas as folhas. Não mostre esta tela ao grupo.</div></div></div>` : ''}
+    </div>`;
+  }
   const statusCard = `<section class="card status-card">
     <div class="status-top">
       <span class="chip ${phase === 'playing' ? 'chip-playing' : 'chip-ended'}">${PHASE_LABEL[phase]}</span>
       ${phase === 'playing' && state.timerEnd ? `<div id="fac-timer-${code}" class="timer-big timer-md" aria-label="Tempo restante">--:--</div>` : ''}
     </div>
     ${controls}
+    ${gabarito}
   </section>`;
 
   // Pessoas
@@ -2101,8 +2313,13 @@ function renderCabin(parts) {
   const cPlus        = ROLE_ORDER.slice(3).filter(r => presentRoles.includes(r));
 
   // Posição de cada poltrona sobre a fuselagem (eixo central em x=260)
-  const POS = { A:[260,114], B1:[248,162], B2:[272,162] };
-  cPlus.forEach((r, i) => { POS[r] = [i % 2 === 0 ? 248 : 272, 212 + Math.floor(i / 2) * 44]; });
+  // Fileiras: A, depois B1/B2, depois pares C–D, E–F... (a última pessoa ímpar fica à esquerda).
+  // Com 6 a 11 pessoas há de 4 a 6 fileiras, espalhadas por toda a cabine (y de 114 a 344).
+  const rows = 2 + Math.ceil(cPlus.length / 2);
+  const ROW_Y = { 4: [114, 191, 267, 344], 5: [114, 171, 229, 287, 344], 6: [114, 160, 206, 252, 298, 344] };
+  const ys = ROW_Y[Math.min(6, Math.max(4, rows))];
+  const POS = { A:[260, ys[0]], B1:[248, ys[1]], B2:[272, ys[1]] };
+  cPlus.forEach((r, i) => { POS[r] = [i % 2 === 0 ? 248 : 272, ys[2 + Math.floor(i / 2)]]; });
 
   const seats = Object.keys(POS).filter(r => presentRoles.includes(r))
     .map(r => mkSeat(r, POS[r][0], POS[r][1], rToN, targets)).join('');
