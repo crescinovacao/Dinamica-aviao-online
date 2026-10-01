@@ -37,6 +37,9 @@
           "answeredBy": {
             ".write": "auth != null && root.child('aviao/'+$code+'/participants/'+auth.uid+'/role').val() === 'A' && root.child('aviao/'+$code+'/state/phase').val() === 'playing' && !data.exists()",
             ".validate": "newData.val() === null || newData.val() === 'A'"
+          },
+          "revealed": {
+            ".validate": "newData.isBoolean()"
           }
         },
         "participants": {
