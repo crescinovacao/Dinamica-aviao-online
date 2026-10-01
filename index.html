@@ -983,52 +983,62 @@ async function createSession() {
   const timerMin  = parseInt(document.getElementById('timerMinInp').value) || 0;
   const numPlanes = parseInt(document.getElementById('numPlanesSel').value);
 
-  // Generate unique session code
-  let sCode, tries = 0;
-  do {
-    sCode = rndCode();
-    const s = await db.ref(`aviao_sessions/${sCode}`).once('value');
-    if (!s.exists()) break;
-  } while (++tries < 10);
-
-  sessionCode = sCode;
-  sessionStorage.setItem('av_session', sCode);
-  sessionStorage.setItem('av_role', 'fac');
-
-  // Create one room per airplane (each gets a sequential version 1-5)
-  const planes = [];
-  for (let i = 0; i < numPlanes; i++) {
-    let code, t2 = 0;
+  try {
+    // Generate unique session code
+    let sCode, tries = 0;
     do {
-      code = rndCode();
-      const s = await db.ref(`aviao/${code}`).once('value');
+      sCode = rndCode();
+      const s = await db.ref(`aviao_sessions/${sCode}`).once('value');
       if (!s.exists()) break;
-    } while (++t2 < 10);
+    } while (++tries < 10);
 
-    const version = (i % 5) + 1; // cycles 1,2,3,4,5,1,...
-    planes.push({ code, version, numParticipants: numPart, timerMinutes: timerMin });
+    sessionCode = sCode;
+    sessionStorage.setItem('av_session', sCode);
+    sessionStorage.setItem('av_role', 'fac');
 
-    await db.ref(`aviao/${code}`).set({
-      meta: {
-        facilitatorId:   myUid,
-        numParticipants: numPart,
-        timerMinutes:    timerMin,
-        planeVersion:    version,
-        sessionCode:     sCode,
-        planeIndex:      i,
-        planeLabel:      `Avião ${i+1}`,
-        createdAt:       Date.now(),
-      },
-      state: { phase:'lobby', answer:null, correct:null, timerEnd:null },
+    // Create one room per airplane (each gets a sequential version 1-5)
+    const planes = [];
+    for (let i = 0; i < numPlanes; i++) {
+      let code, t2 = 0;
+      do {
+        code = rndCode();
+        const s = await db.ref(`aviao/${code}`).once('value');
+        if (!s.exists()) break;
+      } while (++t2 < 10);
+
+      const version = (i % 5) + 1; // cycles 1,2,3,4,5,1,...
+      planes.push({ code, version, numParticipants: numPart, timerMinutes: timerMin });
+
+      await db.ref(`aviao/${code}`).set({
+        meta: {
+          facilitatorId:   myUid,
+          numParticipants: numPart,
+          timerMinutes:    timerMin,
+          planeVersion:    version,
+          sessionCode:     sCode,
+          planeIndex:      i,
+          planeLabel:      `Avião ${i+1}`,
+          createdAt:       Date.now(),
+        },
+        state: { phase:'lobby', answer:null, correct:null, timerEnd:null },
+      });
+    }
+
+    // Store session index
+    const planesObj = Object.fromEntries(planes.map((p,i) => [String(i), p]));
+    await db.ref(`aviao_sessions/${sCode}`).set({
+      meta: { facilitatorId:myUid, numPlanes, createdAt: Date.now() },
+      planes: planesObj,
     });
+  } catch(e) {
+    console.error(e);
+    const denied = e && (e.code === 'PERMISSION_DENIED' || /permission_denied/i.test(e.message||''));
+    showErr('setupErr', denied
+      ? 'O banco recusou a gravação. Publique as regras do Firebase (database.rules.json) e tente de novo.'
+      : connErr(e), 10000);
+    isBusy = false; btn.disabled = false; btn.textContent = 'Criar sessão';
+    return;
   }
-
-  // Store session index
-  const planesObj = Object.fromEntries(planes.map((p,i) => [String(i), p]));
-  await db.ref(`aviao_sessions/${sCode}`).set({
-    meta: { facilitatorId:myUid, numPlanes, createdAt: Date.now() },
-    planes: planesObj,
-  });
 
   planeList = planes;
   document.getElementById('lobbySessionBadge').textContent = `Sessão ${sCode}`;
