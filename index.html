@@ -668,9 +668,6 @@
 
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="connBanner" class="conn-banner" role="status" hidden>Sem conexão. Tentando reconectar...</div>
-<div id="fatalMsg" style="display:none;background:#FDECEC;color:#B91C1C;padding:14px 18px;text-align:center;font-weight:700;font-size:14px" role="alert">
-  Não foi possível carregar o serviço de conexão. Verifique a internet (ou se a rede bloqueia gstatic.com) e recarregue a página.
-</div>
 <noscript><p style="padding:16px;text-align:center">Esta dinâmica precisa de JavaScript ativado no navegador.</p></noscript>
 
 <!-- HOME -->
@@ -745,6 +742,12 @@
           <input type="number" id="timerMinInp" value="15" min="0" max="90" inputmode="numeric">
           <span>minutos (0 = sem cronômetro, máximo 90)</span>
         </div>
+      </div>
+
+      <div class="field" id="passWrap" hidden>
+        <label class="field-label" for="passInp">Senha de facilitação</label>
+        <p class="field-hint">Esta instalação pede uma senha para criar sessões.</p>
+        <input type="password" id="passInp" autocomplete="off" maxlength="64">
       </div>
 
       <p class="summary" id="setupSummary" aria-live="polite"></p>
@@ -933,22 +936,14 @@
   </main>
 </div>
 
-<!-- ══════════════════════ FIREBASE + JS ══════════════════════ -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<!-- ══════════════════════ SUPABASE (API REST) + JS ══════════════════════ -->
 <script>
 // ─────────────────────────────────────────── CONSTANTS
 
-const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyBR3G2IpbFsn09_7k-lg3W1k842fWki9gg",
-  authDomain:        "crescimentum-dinamicas-o-b5922.firebaseapp.com",
-  databaseURL:       "https://crescimentum-dinamicas-o-b5922-default-rtdb.firebaseio.com",
-  projectId:         "crescimentum-dinamicas-o-b5922",
-  storageBucket:     "crescimentum-dinamicas-o-b5922.firebasestorage.app",
-  messagingSenderId: "785263066453",
-  appId:             "1:785263066453:web:74771af6c100cfb4c003dc"
-};
+// Chave PUBLICÁVEL do Supabase: pode ficar no código. Ela só consegue chamar as funções av_*;
+// as tabelas são privadas e todas as regras (papéis, gabarito, tempo) são aplicadas no servidor.
+const SUPABASE_URL = "https://taugeysuczntdgwtrcsx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_hCgvLUA2pJiXP6kIY-QRUg_I4TpfGY9";
 
 const SYMBOLS = [
   { id:'amp', ch:'&',  name:'E comercial' },
@@ -960,89 +955,7 @@ const SYMBOLS = [
 ];
 const SYM = Object.fromEntries(SYMBOLS.map(s => [s.id, s]));
 
-// ── All 5 airplane versions (confirmed against original PDFs) ──
-const PLANE_VERSIONS = {
-  1: { // Avião 1 — resposta: &
-    answer: 'amp',
-    roles: {
-      A:  ['amp','fem','sor','mas','pct'],
-      B1: ['fem','sor','amp','pro','mas'],
-      B2: ['fem','pro','sor','amp','mas'],
-      C:  ['pct','mas','sor','pro','amp'],
-      D:  ['pct','sor','amp','fem','pro'],
-      E:  ['amp','pro','mas','fem','pct'],
-      F:  ['sor','mas','pro','amp','fem'],
-      G:  ['sor','pro','fem','amp','mas'],
-      H:  ['pro','sor','mas','fem','amp'],
-      I:  ['sor','pct','mas','amp','pro'],
-      J:  ['mas','sor','amp','fem','pct'],
-    }
-  },
-  2: { // Avião 2 — resposta: ♀
-    answer: 'fem',
-    roles: {
-      A:  ['fem','sor','amp','mas','pct'],
-      B1: ['sor','pro','fem','mas','amp'],
-      B2: ['mas','sor','amp','fem','pro'],
-      C:  ['pct','pro','mas','sor','fem'],
-      D:  ['pro','fem','pct','sor','amp'],
-      E:  ['amp','fem','pro','pct','mas'],
-      F:  ['fem','mas','amp','pro','sor'],
-      G:  ['mas','sor','fem','amp','pro'],
-      H:  ['pro','sor','mas','fem','amp'],
-      I:  ['sor','pct','amp','mas','fem'],
-      J:  ['fem','pro','mas','pct','amp'],
-    }
-  },
-  3: { // Avião 3 — resposta: ⊘
-    answer: 'pro',
-    roles: {
-      A:  ['pro','pct','sor','mas','amp'],
-      B1: ['fem','amp','mas','sor','pro'],
-      B2: ['fem','pro','sor','mas','amp'],
-      C:  ['pct','sor','mas','pro','fem'],
-      D:  ['pct','amp','fem','sor','pro'],
-      E:  ['pro','pct','mas','fem','amp'],
-      F:  ['sor','fem','mas','amp','pro'],
-      G:  ['sor','pro','mas','fem','amp'],
-      H:  ['sor','fem','mas','pro','amp'],
-      I:  ['sor','pct','mas','fem','pro'],
-      J:  ['fem','pct','mas','pro','amp'],
-    }
-  },
-  4: { // Avião 4 — resposta: ☺
-    answer: 'sor',
-    roles: {
-      A:  ['pct','amp','sor','mas','fem'],
-      B1: ['mas','fem','pro','sor','amp'],
-      B2: ['pro','pct','sor','mas','amp'],
-      C:  ['fem','pro','sor','pct','mas'],
-      D:  ['pro','pct','fem','sor','amp'],
-      E:  ['pct','fem','pro','mas','sor'],
-      F:  ['sor','pro','mas','pct','amp'],
-      G:  ['pro','sor','mas','fem','pct'],
-      H:  ['fem','pro','sor','pct','amp'],
-      I:  ['sor','fem','pct','mas','amp'],
-      J:  ['mas','pct','sor','amp','pro'],
-    }
-  },
-  5: { // Avião 5 — resposta: %
-    answer: 'pct',
-    roles: {
-      A:  ['pct','sor','amp','mas','fem'],
-      B1: ['fem','amp','pro','pct','mas'],
-      B2: ['amp','pro','pct','mas','sor'],
-      C:  ['fem','sor','pro','mas','pct'],
-      D:  ['amp','pct','sor','fem','pro'],
-      E:  ['pct','fem','pro','mas','amp'],
-      F:  ['pct','amp','pro','mas','fem'],
-      G:  ['sor','fem','pro','pct','mas'],
-      H:  ['pro','sor','pct','fem','amp'],
-      I:  ['sor','pct','mas','amp','fem'],
-      J:  ['mas','amp','sor','pro','pct'],
-    }
-  }
-};
+// As folhas de símbolos e o gabarito ficam só no servidor (Supabase); o navegador só recebe a própria folha.
 
 const MIN_PLAYERS = 6;
 const ROLE_ORDER = ['A','B1','B2','C','D','E','F','G','H','I','J'];
@@ -1074,51 +987,74 @@ function canSee(myRole, msg) {
 
 // ─────────────────────────────────────────── STATE
 
-const SDK_OK = (typeof firebase !== 'undefined');
-let db = null, auth = null;
-// Facilitação e participantes usam "apps" Firebase separados. Assim, abas de participantes
-// abertas no mesmo navegador da facilitação NÃO herdam a identidade dela.
-function initFirebase(mode) {
-  if (db) return;
-  const app = firebase.initializeApp(FIREBASE_CONFIG, mode === 'local' ? 'fac' : 'par');
-  db   = app.database();
-  auth = app.auth();
-  // Aviso de conexão: só aparece se a conexão cair depois de ter funcionado uma vez
-  let seen = false;
-  db.ref('.info/connected').on('value', s => {
-    const ok = s.val() === true; if (ok) seen = true;
-    const b = document.getElementById('connBanner'); if (b) b.hidden = ok || !seen;
-  });
-}
-
-let myUid = null;          // preenchido por ensureAuth() (login anônimo)
-let authPromise = null;
+// ── Camada de dados (Supabase) ──
+// Sem login: cada navegador gera um token aleatório (a "chave" da pessoa). O servidor só guarda o
+// hash dele. Facilitação: token no navegador (localStorage), para recuperar a sessão depois.
+// Participante: token preso à aba (sessionStorage).
+let myUid = null;          // id público da pessoa na sala (devolvido pelo servidor ao entrar)
 let serverOffset = 0;      // diferença entre o relógio do servidor e o deste aparelho
 function now() { return Date.now() + serverOffset; }
 
-// Participantes: identidade presa à aba (SESSION). Facilitação: presa ao navegador (LOCAL),
-// para conseguir recuperar a sessão depois de fechar a aba.
-function ensureAuth(mode) {
-  if (!SDK_OK) return Promise.reject(new Error('sdk'));
-  if (authPromise) return authPromise;
-  try { initFirebase(mode); } catch(e) { return Promise.reject(e); }
-  const pers = mode === 'local' ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
-  authPromise = auth.setPersistence(pers)
-    .then(() => new Promise(resolve => {
-      const off = auth.onAuthStateChanged(u => { off(); resolve(u); });
-    }))
-    .then(u => u || auth.signInAnonymously().then(c => c.user))
-    .then(u => { myUid = u.uid; return u; })
-    .then(u => db.ref('.info/serverTimeOffset').once('value')
-      .then(sn => { serverOffset = Number(sn.val()) || 0; })
-      .catch(() => {})
-      .then(() => u))
-    .catch(e => { authPromise = null; throw e; });
-  return authPromise;
+function newToken() {
+  const a = new Uint8Array(24);
+  (window.crypto || window.msCrypto).getRandomValues(a);
+  return Array.from(a, b => b.toString(16).padStart(2, '0')).join('');
 }
+let memFacToken = null, memParToken = null;
+function facToken() {
+  try {
+    let t = localStorage.getItem('av_fac_token');
+    if (!t || t.length < 32) { t = newToken(); localStorage.setItem('av_fac_token', t); }
+    return t;
+  } catch(e) { return memFacToken || (memFacToken = newToken()); }
+}
+function parToken() {
+  try {
+    let t = sessionStorage.getItem('av_par_token');
+    if (!t || t.length < 32) { t = newToken(); sessionStorage.setItem('av_par_token', t); }
+    return t;
+  } catch(e) { return memParToken || (memParToken = newToken()); }
+}
+
+// Aviso de conexão: só aparece se a conexão cair depois de ter funcionado uma vez
+let netSeen = false;
+function netState(ok) {
+  if (ok) netSeen = true;
+  const b = document.getElementById('connBanner'); if (b) b.hidden = ok || !netSeen;
+}
+
+// Chama uma função do servidor. Erros de regra voltam como {error:'codigo'} e viram exceção com .code
+async function rpc(fn, args) {
+  const t0 = Date.now();
+  let res;
+  try {
+    res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(args || {}),
+      keepalive: fn === 'av_leave',
+    });
+  } catch(e) {
+    netState(false);
+    const err = new Error('rede'); err.code = 'rede'; throw err;
+  }
+  let data = null;
+  try { data = await res.json(); } catch(e) {}
+  if (!res.ok) {
+    if (res.status >= 500) netState(false);
+    const err = new Error((data && (data.message || data.hint)) || ('HTTP ' + res.status));
+    err.code = (data && data.code) || ('http-' + res.status);
+    throw err;
+  }
+  netState(true);
+  if (data && data.now) serverOffset = data.now - (t0 + Date.now()) / 2;
+  if (data && data.error) { const err = new Error(data.error); err.code = data.error; err.app = true; throw err; }
+  return data;
+}
+
 function connErr(e) {
   console.error(e);
-  const code = e && (e.code || (e.message && /^[a-z-]+\/[a-z-]+/i.test(e.message) ? e.message.split(/\s/)[0] : ''));
+  const code = e && e.code;
   return 'Não foi possível conectar ao servidor. Verifique a internet e tente de novo.' + (code ? ` (código: ${code})` : '');
 }
 
@@ -1130,14 +1066,13 @@ let isBusy   = false;
 // ── Facilitator session state ──
 let sessionCode = null;
 let planeList   = [];   // [{code, version, numParticipants, timerMinutes}, ...]
-let planeRefs   = {};   // code → Firebase ref
+let facSince    = {};   // code → id da última mensagem recebida
 let planeCache  = {};   // code → {state, parts, msgs:[]}
 let planeRenderedKeys = {}; // code → Set of msg keys
 let activePlane = null; // code of currently viewed plane (null = overview)
 
 // ── Participant (single room) state ──
 let roomCode         = null;
-let roomRef          = null;
 let cfgNumPart       = 6;
 let cfgTimerMin      = 0;
 let cfgPlaneVersion  = 1;
@@ -1206,7 +1141,6 @@ function goFac() {
 async function recoverSession() {
   const code = document.getElementById('recCodeInp').value.trim().toUpperCase();
   if (!/^[A-Z0-9]{4}$/.test(code)) { showErr('recErr', 'O código tem 4 caracteres.'); return; }
-  try { await ensureAuth('local'); } catch(e) { showErr('recErr', connErr(e)); return; }
   const r = await loadFacSession(code);
   if (r !== 'ok') showErr('recErr', r, 8000);
 }
@@ -1266,79 +1200,45 @@ async function createSession() {
   if (isBusy) return; isBusy = true;
   const btn = document.getElementById('btnCreate');
   btn.disabled = true; btn.textContent = 'Criando...';
-  try { await ensureAuth('local'); } catch(e) {
-    showErr('setupErr', connErr(e));
-    isBusy = false; btn.disabled = false; btn.textContent = 'Criar sessão'; return;
-  }
+  const resetBtn = () => { isBusy = false; btn.disabled = false; btn.textContent = 'Criar sessão'; };
 
   const numPart   = parseInt(document.getElementById('numPartSel').value);
   const timerMin  = Math.min(90, Math.max(0, parseInt(document.getElementById('timerMinInp').value) || 0));
   const numPlanes = parseInt(document.getElementById('numPlanesSel').value);
+  const pass      = (document.getElementById('passInp').value || '').trim();
 
-  let sCode, tries = 0;
-  const planes = [];
+  let r;
   try {
-    // Generate unique session code
-    do {
-      sCode = rndCode();
-      const s = await db.ref(`aviao_sessions/${sCode}`).once('value');
-      if (!s.exists()) break;
-    } while (++tries < 10);
-
-    sessionCode = sCode;
-    sessionStorage.setItem('av_session', sCode);
-    sessionStorage.setItem('av_role', 'fac');
-    try { localStorage.setItem('av_fac_session', sCode); } catch(e) {}
-
-    // Create one room per airplane (each gets a sequential version 1-5)
-    for (let i = 0; i < numPlanes; i++) {
-      let code, t2 = 0;
-      do {
-        code = rndCode();
-        const s = await db.ref(`aviao/${code}/meta`).once('value');
-        if (!s.exists()) break;
-      } while (++t2 < 10);
-
-      const version = (i % 5) + 1; // cycles 1,2,3,4,5,1,...
-      planes.push({ code, version, numParticipants: numPart, timerMinutes: timerMin });
-
-      await db.ref(`aviao/${code}`).set({
-        meta: {
-          facilitatorId:   myUid,
-          numParticipants: numPart,
-          timerMinutes:    timerMin,
-          planeVersion:    version,
-          sessionCode:     sCode,
-          planeIndex:      i,
-          planeLabel:      `Avião ${i+1}`,
-          createdAt:       now(),
-        },
-        state: { phase:'lobby', answer:null, correct:null, timerEnd:null },
-      });
-    }
-
-    // Store session index
-    const planesObj = Object.fromEntries(planes.map((p,i) => [String(i), p]));
-    await db.ref(`aviao_sessions/${sCode}`).set({
-      meta: { facilitatorId:myUid, numPlanes, createdAt: now() },
-      planes: planesObj,
+    r = await rpc('av_create_session', {
+      p_token: facToken(), p_num_planes: numPlanes, p_num_part: numPart, p_timer: timerMin,
+      p_passcode: pass || null,
     });
   } catch(e) {
-    console.error(e);
-    const denied = e && (e.code === 'PERMISSION_DENIED' || /permission_denied/i.test(e.message||''));
-    showErr('setupErr', denied
-      ? 'O banco recusou a gravação. Publique as regras do Firebase (database.rules.json) e tente de novo.'
-      : connErr(e), 10000);
-    isBusy = false; btn.disabled = false; btn.textContent = 'Criar sessão';
-    return;
+    const msgs = {
+      passcode_required: 'Digite a senha de facilitação para criar a sessão.',
+      passcode_invalid:  'Senha de facilitação incorreta.',
+      rate_limited:      'Muitas sessões criadas em pouco tempo. Aguarde alguns minutos e tente de novo.',
+      busy:              'O servidor está com muitas sessões agora. Tente de novo em alguns minutos.',
+    };
+    if (e.code === 'passcode_required' || e.code === 'passcode_invalid') {
+      document.getElementById('passWrap').hidden = false;
+      document.getElementById('passInp').focus();
+    }
+    showErr('setupErr', msgs[e.code] || connErr(e), 10000);
+    resetBtn(); return;
   }
 
-  planeList = planes;
+  const sCode = r.sessionCode;
+  sessionCode = sCode;
+  sessionStorage.setItem('av_session', sCode);
+  sessionStorage.setItem('av_role', 'fac');
+  try { localStorage.setItem('av_fac_session', sCode); } catch(e) {}
+
+  planeList = r.planes;
   document.getElementById('lobbySessionBadge').textContent = `Sessão ${sCode}`;
   document.getElementById('facGameBadge').textContent = `Sessão ${sCode}`;
 
-  isBusy = false;
-  btn.disabled = false; btn.textContent = 'Criar sessão';
+  resetBtn();
   showScreen('s-fac-lobby');
   listenAllPlanes();
 }
@@ -1350,44 +1250,73 @@ function facDiag(msg) {
   if (el) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
 }
 
+// A facilitação consulta o servidor a cada poucos segundos (uma chamada para todos os aviões)
+// e só redesenha a tela quando algo mudou.
+let facPollTimer = null, facPolling = false, facSig = '', facFails = 0;
+
 function listenAllPlanes() {
   startFacClock();
-  planeList.forEach((p, i) => {
-    const ref = db.ref(`aviao/${p.code}`);
-    planeRefs[p.code] = ref;
+  facSince = {}; facSig = '';
+  planeList.forEach(p => {
     planeRenderedKeys[p.code] = new Set();
-    planeCache[p.code] = { state:{}, parts:{}, msgs:[] };
+    planeCache[p.code] = { state:{}, parts:{}, msgs:[], key:null };
+  });
+  facPollNow();
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+// Uma única cadeia de consultas: sempre cancela o agendamento anterior antes de criar o próximo
+function facSchedule() {
+  clearTimeout(facPollTimer);
+  if (!sessionCode) return;
+  facPollTimer = setTimeout(async () => { await facPollOnce(); facSchedule(); }, document.hidden ? 5000 : 2000);
+}
+// Depois de uma ação (iniciar, encerrar...), consulta de novo já com o resultado da ação
+async function facPollNow() {
+  clearTimeout(facPollTimer);
+  while (facPolling) await sleep(40);
+  await facPollOnce();
+  facSchedule();
+}
 
-    const onErr = e => { console.error(e); facDiag(`Sem permissão para ler o avião ${i+1} (${e.code || e.message}). Confira se as regras do Firebase foram publicadas.`); };
-    ref.child('state').on('value', snap => {
-      planeCache[p.code].state = snap.val() || {};
-      updateFacView();
-    }, onErr);
-    ref.child('participants').on('value', snap => {
-      planeCache[p.code].parts = snap.val() || {};
-      updateFacView();
-    }, onErr);
-
-    // Cada papel tem a própria caixa de entrada: a facilitação lê todas, cada pessoa lê só a sua
-    ROLE_ORDER.slice(0, p.numParticipants).forEach(role => {
-      ref.child(`inbox/${role}`).on('child_added', snap => {
-        if (planeRenderedKeys[p.code].has(snap.key)) return;
-        planeRenderedKeys[p.code].add(snap.key);
-        const msg = { _key: snap.key, ...snap.val() };
-        const list = planeCache[p.code].msgs;
-        const inOrder = list.length === 0 || (msg.ts||0) >= (list[list.length-1].ts||0);
-        list.push(msg);
-        if (!inOrder) list.sort((a,b) => (a.ts||0)-(b.ts||0));
+async function facPollOnce() {
+  if (facPolling || !sessionCode) return;
+  facPolling = true;
+  try {
+    const r = await rpc('av_fac_poll', { p_token: facToken(), p_session: sessionCode, p_since: facSince });
+    facFails = 0; facDiag('');
+    let sig = '';
+    planeList.forEach(p => {
+      const d = r.planes && r.planes[p.code]; if (!d) return;
+      const c = planeCache[p.code];
+      c.state = d.state || {}; c.parts = d.parts || {}; c.key = d.key || null;
+      sig += JSON.stringify([d.state, d.parts]);
+      (d.msgs || []).forEach(msg => {
+        facSince[p.code] = Math.max(facSince[p.code] || 0, msg._key);
+        if (planeRenderedKeys[p.code].has(msg._key)) return;
+        planeRenderedKeys[p.code].add(msg._key);
+        c.msgs.push(msg);
         if (activePlane === p.code) {
           const mon = document.getElementById(`fac-mon-${p.code}`);
-          if (mon) {
-            if (inOrder) appendFacMsgTo(mon, msg);
-            else { mon.innerHTML = ''; list.forEach(m => appendFacMsgTo(mon, m)); }
-          }
+          if (mon) appendFacMsgTo(mon, msg);
         }
-      }, onErr);
+      });
     });
-  });
+    if (sig !== facSig) { updateFacView(); facSig = sig; }
+    else if (activePlane !== null) updateMsgCounts();
+  } catch(e) {
+    console.error(e);
+    if (e.code === 'forbidden' || e.code === 'not_found') {
+      facDiag('Esta sessão não é mais acessível neste navegador.');
+    } else if (++facFails >= 3) {
+      facDiag(`Sem conexão com o servidor (${e.code || e.message}). Tentando de novo...`);
+    }
+  } finally { facPolling = false; }
+}
+// Contador de mensagens do cartão "Mensagens" sem redesenhar a tela inteira
+function updateMsgCounts() {
+  const c = planeCache[activePlane]; if (!c) return;
+  const el = document.querySelector('#facPlaneContent .card-title .count[data-msgs]');
+  if (el) el.textContent = c.msgs.length;
 }
 
 // ─────────────────────────────────────────── FAC VIEW ROUTING
@@ -1654,40 +1583,13 @@ function renderLobbyPlanes() {
 async function startPlane(code) {
   if (isBusy) return; isBusy = true;
   try {
-    const ref  = planeRefs[code];
-    const plan = planeList.find(p => p.code === code);
-    if (!ref || !plan) return;
-
-    const snap = await ref.child('participants').once('value');
-    const parts = snap.val() || {};
-    // Quem entrou primeiro tem prioridade de vaga; os papéis são sorteados (D2)
-    const chosen = Object.entries(parts)
-      .sort(([,a],[,b]) => (a.connectedAt||0)-(b.connectedAt||0))
-      .slice(0, plan.numParticipants);
-
-    if (chosen.length < MIN_PLAYERS) {
-      toast(`Faltam pessoas: o mínimo para iniciar é ${MIN_PLAYERS}.`); return;
-    }
-
-    const vData = PLANE_VERSIONS[plan.version];
-    const roles = ROLE_ORDER.slice(0, chosen.length);
-    for (let i = roles.length - 1; i > 0; i--) {      // Fisher-Yates
-      const j = Math.floor(Math.random() * (i + 1));
-      [roles[i], roles[j]] = [roles[j], roles[i]];
-    }
-    const updates = {};
-    chosen.forEach(([uid], i) => {
-      updates[`participants/${uid}/role`]    = roles[i];
-      updates[`private/${uid}/symbols`] = vData.roles[roles[i]];
-    });
-    updates['state/phase']    = 'playing';
-    updates['state/timerEnd'] = plan.timerMinutes > 0
-      ? now() + plan.timerMinutes * 60000 : null;
-    updates['state/revealed'] = false;
-
-    await ref.update(updates);
+    // O servidor escolhe quem entrou primeiro, sorteia os papéis e entrega a folha de cada pessoa
+    await rpc('av_start', { p_token: facToken(), p_code: code });
+    await facPollNow();
   } catch(e) {
-    toast(connErr(e));
+    if (e.code === 'too_few') toast(`Faltam pessoas: o mínimo para iniciar é ${MIN_PLAYERS}.`);
+    else if (e.code === 'bad_phase') { toast('Este avião já foi iniciado.'); facPollNow(); }
+    else toast(connErr(e));
   } finally {
     isBusy = false;
   }
@@ -1794,7 +1696,7 @@ function renderActivePlane() {
   let gabarito = '';
   if (phase === 'playing') {
     const open = !!gabOpen[activePlane];
-    const gs = SYM[PLANE_VERSIONS[p.version]?.answer];
+    const gs = SYM[cache.key];
     gabarito = `<div class="gabarito">
       <button type="button" class="btn btn-outline btn-sm btn-full" aria-expanded="${open}" onclick="toggleGabarito('${code}')">${open ? 'Ocultar gabarito' : 'Ver gabarito'}</button>
       ${open ? `<div class="gab-box"><span class="gab-glyph" aria-hidden="true">${esc(gs?.ch||'?')}</span>
@@ -1827,7 +1729,7 @@ function renderActivePlane() {
   let resultCard = '';
   if (state.answer || phase === 'ended') {
     const sym = state.answer ? SYM[state.answer] : null;
-    const correctSym = SYM[PLANE_VERSIONS[p.version]?.answer];
+    const correctSym = SYM[cache.key];
     const left = state.answer
       ? `<div class="result-box">
           <div class="result-label">Resposta do grupo</div>
@@ -1849,7 +1751,7 @@ function renderActivePlane() {
 
   // Mensagens
   const msgCard = `<section class="card">
-    <h2 class="card-title">Mensagens <span class="count">${cache.msgs.length}</span></h2>
+    <h2 class="card-title">Mensagens <span class="count" data-msgs>${cache.msgs.length}</span></h2>
     <div class="chat-area mon-feed" id="fac-mon-${code}" role="log" aria-live="polite">
       <div class="chat-empty">Nenhuma mensagem ainda.</div>
     </div>
@@ -1885,8 +1787,7 @@ function appendFacMsgTo(el, msg) {
 }
 
 // Relógio da facilitação: roda para todos os aviões, mesmo com outra aba aberta,
-// para o encerramento automático e os avisos de tempo não dependerem da tela.
-const planeAutoEnded = {};
+// para os avisos de tempo não dependerem da tela. O encerramento automático é do servidor.
 const planePrevRem = {};
 let facClock = null;
 function facClockTick() {
@@ -1902,12 +1803,7 @@ function facClockTick() {
     const prev = planePrevRem[p.code] ?? rem;
     warnTime(prev, rem, `Avião ${i+1}: `);
     planePrevRem[p.code] = rem;
-    if (rem <= 0 && !planeAutoEnded[p.code]) {
-      // O tempo acabou: a facilitação encerra o avião (sem revelar o resultado)
-      planeAutoEnded[p.code] = true;
-      db.ref(`aviao/${p.code}/state/phase`).set('ended')
-        .catch(e => { planeAutoEnded[p.code] = false; console.error(e); });
-    }
+    // Quando o tempo acaba, o servidor encerra o avião sozinho; o painel recebe isso na próxima consulta
   });
 }
 function startFacClock() {
@@ -1924,7 +1820,7 @@ function warnTime(prevMs, remMs, prefix) {
 }
 
 async function facRevealPlane(code) {
-  try { await db.ref(`aviao/${code}/state/revealed`).set(true); }
+  try { await rpc('av_reveal', { p_token: facToken(), p_code: code }); await facPollNow(); }
   catch(e) { toast(connErr(e)); }
 }
 const endConfirm = {};
@@ -1934,11 +1830,20 @@ function askEnd(code, on) {
 }
 async function endPlane(code) {
   endConfirm[code] = false;
-  try { await db.ref(`aviao/${code}/state/phase`).set('ended'); }
+  try { await rpc('av_end', { p_token: facToken(), p_code: code }); await facPollNow(); }
   catch(e) { toast(connErr(e)); }
 }
 
 // ─────────────────────────────────────────── PAR JOIN
+
+const JOIN_ERR = {
+  not_found: 'Sala não encontrada. Verifique o link com a pessoa facilitadora.',
+  expired:   'Esta sala expirou.',
+  ended:     'Esta sessão já foi encerrada.',
+  started:   'Esta dinâmica já começou. Peça ajuda à pessoa facilitadora.',
+  full:      'Sala cheia.',
+  bad_name:  'Digite seu nome para entrar.',
+};
 
 async function joinRoom() {
   if (isBusy) return; isBusy = true;
@@ -1951,74 +1856,28 @@ async function joinRoom() {
   if (!name) { joinFail('Digite seu nome para entrar.'); return; }
 
   try {
-    await ensureAuth();
-    const room = await readRoom(code);
-    if (!room) { joinFail('Sala não encontrada. Verifique o link com a pessoa facilitadora.'); return; }
-
-    if (now() - (room.meta?.createdAt||0) > 24*3600*1000) { joinFail('Esta sala expirou.'); return; }
-    if (room.state?.phase === 'ended') { joinFail('Esta sessão já foi encerrada.'); return; }
-
-    const parts  = room.participants || {};
-    const already = !!parts[myUid];           // reconexão: mesma pessoa, mesmo papel
-    const count  = Object.keys(parts).length;
-    if (!already && room.state?.phase === 'playing') { joinFail('Esta dinâmica já começou. Peça ajuda à pessoa facilitadora.'); return; }
-    if (!already && count >= (room.meta?.numParticipants||0)) { joinFail('Sala cheia.'); return; }
-
+    // O servidor confere sala, validade, vagas e fase; reconectar com o mesmo token devolve o mesmo papel
+    const r = await rpc('av_join', { p_code: code, p_name: name, p_token: parToken() });
     roomCode        = code;
     myName          = name;
     myRole          = 'par';
-    roomRef         = db.ref(`aviao/${code}`);
-    cfgNumPart      = room.meta?.numParticipants || 6;
-    cfgTimerMin     = room.meta?.timerMinutes    || 0;
-    cfgPlaneVersion = room.meta?.planeVersion    || 1;
-    if (already && parts[myUid].role) myPRole = parts[myUid].role;
+    myUid           = r.pid;
+    cfgNumPart      = r.meta?.numParticipants || 6;
+    cfgTimerMin     = r.meta?.timerMinutes    || 0;
+    cfgPlaneVersion = r.meta?.planeVersion    || 1;
+    if (r.role) myPRole = r.role;
 
     sessionStorage.setItem('av_room', code);
     sessionStorage.setItem('av_role', 'par');
     sessionStorage.setItem('av_name', name);
-
-    await registerPresence(!already);
   } catch(e) {
-    joinFail(connErr(e)); return;
+    joinFail(JOIN_ERR[e.code] || connErr(e)); return;
   }
 
   isBusy = false;
   document.getElementById('parRoleHdr').textContent = myPRole ? (ROLE_LABEL[myPRole] || myPRole) : `Sala ${roomCode}`;
   showScreen('s-par-game');
   listenRoom();
-}
-
-// Presença: no lobby quem sai libera a vaga; depois do início a pessoa só fica "offline"
-// e mantém papel e folha, para poder voltar (P0-2).
-let presenceMode = null;  // 'lobby' | 'game'
-async function registerPresence(isNew, phase) {
-  const meRef = roomRef.child(`participants/${myUid}`);
-  const inGame = phase === 'playing' || phase === 'ended';
-  if (isNew) {
-    await meRef.set({ name:myName, role:null, online:true, connectedAt:now() });
-  } else {
-    await meRef.update({ name:myName, online:true });
-  }
-  await meRef.onDisconnect().cancel();
-  if (inGame || !isNew && myPRole) {
-    meRef.onDisconnect().update({ online:false });
-    presenceMode = 'game';
-  } else {
-    meRef.onDisconnect().remove();
-    presenceMode = 'lobby';
-  }
-}
-
-// Lê só as partes públicas da sala (a folha e as caixas de mensagens têm leitura restrita)
-async function readRoom(code) {
-  const base = db.ref(`aviao/${code}`);
-  const [m, st, pa] = await Promise.all([
-    base.child('meta').once('value'),
-    base.child('state').once('value'),
-    base.child('participants').once('value'),
-  ]);
-  if (!m.exists()) return null;
-  return { meta: m.val(), state: st.val() || {}, participants: pa.val() || {} };
 }
 
 function joinFail(msg) {
@@ -2092,25 +1951,30 @@ function updateTabBadge() {
   b.textContent = tabUnread; b.hidden = tabUnread === 0;
 }
 
-function sendMsg() {
+async function sendMsg() {
   const inp    = document.getElementById('chatInp');
   const text   = inp.value.trim();
   const toRole = document.getElementById('chatToSel').value;
-  if (!text || !toRole || !roomRef || !myPRole) return;
+  if (!text || !toRole || !roomCode || !myPRole) return;
   if (!getTargets(myPRole, allRoles).includes(toRole)) {
     toast('Comunicação não permitida pelas regras do avião.'); return;
   }
-  const id  = roomRef.child(`inbox/${toRole}`).push().key;
-  const msg = { fromUid: myUid, fromRole: myPRole, fromName: myName, toRole, text, ts: now() };
-  roomRef.update({
-    [`inbox/${toRole}/${id}`]:     msg,     // caixa de entrada de quem recebe
-    [`sent/${myPRole}/${id}`]:     msg,     // cópia para quem envia (histórico ao recarregar)
-  }).catch(e => {
-    const denied = e && (e.code === 'PERMISSION_DENIED' || /permission_denied/i.test(e.message||''));
-    toast(denied ? 'Mensagem recusada pelas regras do avião.' : connErr(e));
-  });
   inp.value = '';
   inp.focus();
+  try {
+    await rpc('av_send', { p_token: parToken(), p_code: roomCode, p_to: toRole, p_text: text });
+    parPollNow();                       // mostra a mensagem enviada na hora
+  } catch(e) {
+    inp.value = text;                   // devolve o texto para a pessoa não perder o que digitou
+    const msgs = {
+      not_allowed:  'Mensagem recusada pelas regras do avião.',
+      not_playing:  'A dinâmica não está em andamento.',
+      rate_limited: 'Devagar: muitas mensagens em poucos segundos.',
+      bad_text:     'A mensagem deve ter entre 1 e 500 caracteres.',
+      limit:        'Limite de mensagens desta sala atingido.',
+    };
+    toast(msgs[e.code] || connErr(e));
+  }
 }
 
 // ─────────────────────────────────────────── ANSWER PANEL
@@ -2156,17 +2020,12 @@ async function confirmAnswer() {
   const btn = document.getElementById('btnConfirm');
   btn.disabled = true; btn.textContent = 'Enviando...';
   try {
-    const correctAns = PLANE_VERSIONS[cfgPlaneVersion]?.answer || 'amp';
-    await roomRef.update({
-      'state/answer':     selectedAns,
-      'state/correct':    selectedAns === correctAns,
-      'state/answeredBy': myPRole,
-      'state/phase':      'ended',
-    });
+    await rpc('av_answer', { p_token: parToken(), p_code: roomCode, p_symbol: selectedAns });   // o servidor confere o gabarito
+    parPollNow();
     closeAnswerPanel();
   } catch(e) {
-    const denied = e && (e.code === 'PERMISSION_DENIED' || /permission_denied/i.test(e.message||''));
-    toast(denied ? 'A resposta já foi enviada ou a dinâmica foi encerrada.' : connErr(e));
+    const refused = e && (e.code === 'not_playing' || e.code === 'not_allowed');
+    toast(refused ? 'A resposta já foi enviada ou a dinâmica foi encerrada.' : connErr(e));
     closeAnswerPanel();
   } finally {
     isBusy = false;
@@ -2180,58 +2039,84 @@ let lastState = {}, lastParts = {};
 let mySymbols = null;
 let msgStore = {};
 let chatMsgs = [];
+// Consulta o servidor a cada poucos segundos (também serve de sinal de presença) e só redesenha
+// a tela quando algo mudou.
+let parPollTimer = null, parPolling = false, parSince = 0, parSig = '';
 function listenRoom() {
-  if (!roomRef) return;
-  const onErr = e => { console.error(e); toast(connErr(e)); };
-
-  roomRef.child('meta').on('value', snap => {
-    const m = snap.val() || {};
-    cfgNumPart      = m.numParticipants || cfgNumPart;
-    cfgTimerMin     = m.timerMinutes    || cfgTimerMin;
-    cfgPlaneVersion = m.planeVersion    || cfgPlaneVersion;
-  }, onErr);
-
-  roomRef.child('participants').on('value', snap => {
-    lastParts = snap.val() || {};
-    allRoles = []; roleToUid = {}; uidToRole = {}; uidToName = {};
-    Object.entries(lastParts).forEach(([uid, p]) => {
-      uidToName[uid] = p.name || '?';
-      if (p.role) {
-        uidToRole[uid]    = p.role;
-        roleToUid[p.role] = uid;
-        allRoles.push(p.role);
-      }
-    });
-    handlePar(lastState, lastParts);
-  }, onErr);
-
-  roomRef.child('state').on('value', snap => {
-    lastState = snap.val() || {};
-    handlePar(lastState, lastParts);
-  }, onErr);
-
-  // A folha de símbolos fica em um caminho que só a própria pessoa (e a facilitação) lê
-  roomRef.child(`private/${myUid}/symbols`).on('value', snap => {
-    mySymbols = snap.val() || null;
-    handlePar(lastState, lastParts);
-  }, onErr);
-
-  attachMsgListeners();   // se a pessoa já tem papel (retorno à sala)
+  parSince = 0; parSig = ''; msgStore = {}; chatMsgs = [];
+  parPollNow();
+}
+function parSchedule() {
+  clearTimeout(parPollTimer);
+  if (!roomCode) return;
+  parPollTimer = setTimeout(async () => { await parPollOnce(); parSchedule(); },
+    document.hidden ? 5000 : (lastState.phase === 'playing' ? 2000 : 3000));
+}
+async function parPollNow() {
+  clearTimeout(parPollTimer);
+  while (parPolling) await sleep(40);
+  await parPollOnce();
+  parSchedule();
 }
 
-let msgListening = false;
-function attachMsgListeners() {
-  if (msgListening || !myPRole || !roomRef) return;
-  msgListening = true;
-  const onErr = e => { console.error(e); toast(connErr(e)); };
-  const add = snap => {
-    if (msgStore[snap.key]) return;
-    const msg = { _key: snap.key, ...snap.val() };
-    msgStore[snap.key] = msg;
+async function parPollOnce() {
+  if (parPolling || !roomCode) return;
+  parPolling = true;
+  try {
+    const r = await rpc('av_poll', { p_code: roomCode, p_token: parToken(), p_since: parSince });
+    applyPar(r);
+  } catch(e) {
+    if (e.code === 'not_member') await rejoinSilently();
+    else console.error(e);
+  } finally { parPolling = false; }
+}
+
+// Quem ficou muito tempo sem sinal no lobby (celular bloqueado, por exemplo) perde a vaga;
+// ao voltar, entra de novo com o mesmo nome.
+async function rejoinSilently() {
+  try {
+    const r = await rpc('av_join', { p_code: roomCode, p_name: myName || '', p_token: parToken() });
+    myUid = r.pid; if (r.role) myPRole = r.role;
+  } catch(e) {
+    toast(JOIN_ERR[e.code] || connErr(e), 5000);
+    if (JOIN_ERR[e.code]) leaveToHome();
+  }
+}
+function leaveToHome() {
+  clearTimeout(parPollTimer); clearAv();
+  roomCode = null; myPRole = null; myUid = null; lastState = {}; lastParts = {};
+  showScreen('s-home');
+}
+
+function applyPar(r) {
+  const me = r.me || {};
+  myUid = me.pid || myUid;
+  cfgNumPart      = r.meta?.numParticipants || cfgNumPart;
+  cfgTimerMin     = r.meta?.timerMinutes    || cfgTimerMin;
+  cfgPlaneVersion = r.meta?.planeVersion    || cfgPlaneVersion;
+  if (me.role && !myPRole) myPRole = me.role;
+
+  lastParts = r.parts || {};
+  allRoles = []; roleToUid = {}; uidToRole = {}; uidToName = {};
+  Object.entries(lastParts).forEach(([uid, p]) => {
+    uidToName[uid] = p.name || '?';
+    if (p.role) { uidToRole[uid] = p.role; roleToUid[p.role] = uid; allRoles.push(p.role); }
+  });
+  lastState = r.state || {};
+  mySymbols = me.symbols || null;
+
+  // mensagens novas (recebidas e enviadas), já em ordem
+  (r.msgs || []).forEach(msg => {
+    parSince = Math.max(parSince, msg._key);
+    if (msgStore[msg._key]) return;
+    msgStore[msg._key] = msg;
     addChatMsg(msg);
-  };
-  roomRef.child(`inbox/${myPRole}`).on('child_added', add, onErr);
-  roomRef.child(`sent/${myPRole}`).on('child_added', add, onErr);
+  });
+
+  const sig = JSON.stringify([lastState, lastParts, mySymbols, myPRole]);
+  if (sig === parSig) return;
+  handlePar(lastState, lastParts);
+  parSig = sig;
 }
 
 // ─────────────────────────────────────────── PAR HANDLER
@@ -2241,10 +2126,7 @@ function handlePar(state, parts) {
   const me    = parts[myUid] || {};
 
   // Primeira atribuição de papel
-  if (me.role && !myPRole) {
-    myPRole = me.role;
-    attachMsgListeners();
-  }
+  if (me.role && !myPRole) myPRole = me.role;
   document.getElementById('parRoleHdr').textContent =
     myPRole ? (ROLE_LABEL[myPRole] || myPRole) : `Sala ${roomCode || ''}`.trim();
 
@@ -2266,15 +2148,6 @@ function handlePar(state, parts) {
   const ppGame = document.getElementById('pp-game');
   ppGame.style.display = 'block';
   ppGame.classList.toggle('is-ended', phase === 'ended');
-
-  // O jogo começou: quem cair agora continua com papel e folha
-  if (presenceMode === 'lobby' && me.role && roomRef) {
-    const meRef = roomRef.child(`participants/${myUid}`);
-    meRef.onDisconnect().cancel()
-      .then(() => meRef.onDisconnect().update({ online:false }))
-      .catch(() => {});
-    presenceMode = 'game';
-  }
 
   // Cartão do papel: quem sou e com quem posso falar
   const roleCard = document.getElementById('parRoleCard');
@@ -2326,12 +2199,11 @@ function handlePar(state, parts) {
     document.getElementById('parCabinWrap').style.display   = 'none';
     document.getElementById('parSubmitWrap').style.display  = 'none';
 
-    const correctAns = PLANE_VERSIONS[cfgPlaneVersion]?.answer || 'amp';
-    const correctSym = SYM[correctAns];
+    const correctSym = SYM[state.key];
     let html = '';
     if (!state.revealed) {
       html = `<div class="await-box"><span class="pulse" aria-hidden="true"></span>
-        <p><strong>${state.answer ? 'A resposta do grupo foi enviada.' : 'A dinâmica foi encerrada.'}</strong></p>
+        <p><strong>${state.answered ? 'A resposta do grupo foi enviada.' : 'A dinâmica foi encerrada.'}</strong></p>
         <p class="muted">Aguarde a pessoa facilitadora liberar o resultado.</p></div>`;
     } else if (state.answer) {
       const sym = SYM[state.answer];
@@ -2361,7 +2233,7 @@ function handlePar(state, parts) {
 // Arquitetura (camadas independentes, sem estado global dentro delas):
 //   CABIN_SPEC ............ contrato visual e geometria; é o único lugar com coordenadas
 //   cabinRoles/…Layout .... domínio puro: quantidade → papéis → posição de cada poltrona
-//   toCabinParticipants ... adaptador: estado da sala (Firebase) → Participant[]
+//   toCabinParticipants ... adaptador: estado da sala (servidor) → Participant[]
 //   cabinAircraftHtml ..... vetor do avião (SVG exportado do Figma, não rasterizado)
 //   cabinSeatHtml ......... ParticipantSeat: uma poltrona com estado, nome e presença
 //   cabinHtml ............. Cabin: compõe avião + poltronas em um frame de 520 × 560
@@ -2369,7 +2241,7 @@ function handlePar(state, parts) {
 //   renderCabin ........... integração com a tela do jogo (única função que toca o DOM)
 //
 // Para ligar a outra fonte de dados (WebSocket, outra sala), basta alimentar cabinHtml()
-// com uma lista de Participant; nada abaixo conhece Firebase.
+// com uma lista de Participant; nada abaixo conhece o servidor.
 
 /**
  * @typedef {'A'|'B1'|'B2'|'C'|'D'|'E'|'F'|'G'|'H'|'I'|'J'} ParticipantRole
@@ -2673,29 +2545,25 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) docu
 
 async function loadFacSession(sCode) {
   try {
-    const snap = await db.ref(`aviao_sessions/${sCode}`).once('value');
-    if (!snap.exists()) return 'Sessão não encontrada.';
-    const sess = snap.val();
-    if (now() - (sess.meta?.createdAt||0) > 24*3600*1000) return 'Esta sessão expirou.';
-    if (sess.meta?.facilitatorId !== myUid)
-      return 'Esta sessão foi criada em outro navegador. Só quem a criou, no mesmo navegador, consegue recuperá-la.';
-
-    sessionCode = sCode;
+    const r = await rpc('av_fac_load', { p_token: facToken(), p_session: sCode });
+    sessionCode = r.sessionCode;
     myRole = 'fac';
-    sessionStorage.setItem('av_session', sCode);
+    sessionStorage.setItem('av_session', sessionCode);
     sessionStorage.setItem('av_role', 'fac');
-    try { localStorage.setItem('av_fac_session', sCode); } catch(e) {}
-    document.getElementById('lobbySessionBadge').textContent = `Sessão ${sCode}`;
-    document.getElementById('facGameBadge').textContent = `Sessão ${sCode}`;
+    try { localStorage.setItem('av_fac_session', sessionCode); } catch(e) {}
+    document.getElementById('lobbySessionBadge').textContent = `Sessão ${sessionCode}`;
+    document.getElementById('facGameBadge').textContent = `Sessão ${sessionCode}`;
 
-    planeList = Object.entries(sess.planes||{})
-      .sort(([a],[b]) => Number(a)-Number(b))
-      .map(([,v]) => v);
-
+    planeList = r.planes || [];
     showScreen('s-fac-lobby');
     listenAllPlanes();
     return 'ok';
-  } catch(e) { console.error(e); return connErr(e); }
+  } catch(e) {
+    if (e.code === 'not_found') return 'Sessão não encontrada.';
+    if (e.code === 'expired')   return 'Esta sessão expirou.';
+    if (e.code === 'forbidden') return 'Esta sessão foi criada em outro navegador. Só quem a criou, no mesmo navegador, consegue recuperá-la.';
+    return connErr(e);
+  }
 }
 
 async function resumeSession() {
@@ -2703,36 +2571,31 @@ async function resumeSession() {
   const rCode = sessionStorage.getItem('av_room');
   const role  = sessionStorage.getItem('av_role');
 
-  try { await ensureAuth(role === 'fac' ? 'local' : undefined); } catch(e) { toast(connErr(e)); return; }
-
   if (role === 'fac' && sCode) {
     const r = await loadFacSession(sCode);
     if (r !== 'ok') { clearAv(); }
   } else if (role === 'par' && rCode) {
+    myName = sessionStorage.getItem('av_name');
+    if (!myName) { clearAv(); return; }
     try {
-      const room = await readRoom(rCode);
-      if (!room) { clearAv(); return; }
-      if (now() - (room.meta?.createdAt||0) > 24*3600*1000) { clearAv(); return; }
-      if (room.state?.phase === 'ended') { clearAv(); return; }
-
-      myName = sessionStorage.getItem('av_name');
-      const me = room.participants?.[myUid];
-      if (!myName || !me) { clearAv(); return; }   // vaga já liberada: volta ao início
-
+      // Reconecta com o mesmo token: o servidor devolve o mesmo papel e a mesma folha
+      const r = await rpc('av_join', { p_code: rCode, p_name: myName, p_token: parToken() });
       roomCode        = rCode;
       myRole          = 'par';
-      roomRef         = db.ref(`aviao/${rCode}`);
-      cfgNumPart      = room.meta?.numParticipants || 6;
-      cfgTimerMin     = room.meta?.timerMinutes    || 0;
-      cfgPlaneVersion = room.meta?.planeVersion    || 1;
-      if (me.role) myPRole = me.role;
-
-      await registerPresence(false, room.state?.phase);
+      myUid           = r.pid;
+      cfgNumPart      = r.meta?.numParticipants || 6;
+      cfgTimerMin     = r.meta?.timerMinutes    || 0;
+      cfgPlaneVersion = r.meta?.planeVersion    || 1;
+      if (r.role) myPRole = r.role;
 
       document.getElementById('parRoleHdr').textContent = myPRole ? (ROLE_LABEL[myPRole] || myPRole) : `Sala ${rCode}`;
       showScreen('s-par-game');
       listenRoom();
-    } catch(e) { console.error(e); clearAv(); }
+    } catch(e) {
+      console.error(e);
+      if (!e.app) toast(connErr(e));   // sem rede: mantém os dados para tentar de novo ao recarregar
+      else clearAv();
+    }
   }
 }
 
@@ -2744,7 +2607,6 @@ function clearAv() {
 
 window.addEventListener('DOMContentLoaded', () => {
   initSetup();
-  if (!SDK_OK) { document.getElementById('fatalMsg').style.display = 'block'; return; }
 
   const urlCode = new URLSearchParams(location.search).get('code');
   const sCode   = sessionStorage.getItem('av_session');
@@ -2762,6 +2624,9 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+window.addEventListener('pagehide', () => {
+  if (myRole === 'par' && roomCode) rpc('av_leave', { p_code: roomCode, p_token: parToken() }).catch(() => {});
+});
 window.addEventListener('beforeunload', e => {
   if (roomCode || sessionCode) { e.preventDefault(); e.returnValue = ''; }
 });
