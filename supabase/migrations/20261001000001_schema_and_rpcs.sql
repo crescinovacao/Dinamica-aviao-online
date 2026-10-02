@@ -48,6 +48,7 @@ create table av.participants (
   token_hash   bytea not null,
   name         text  not null check (char_length(name) between 1 and 30),
   role         text  check (role in ('A','B1','B2','C','D','E','F','G','H','I','J')),
+  seat         text  check (seat in ('A','B1','B2','C','D','E','F','G','H','I','J')),   -- assento escolhido no lobby
   symbols      text[],
   connected_at timestamptz not null default now(),
   last_seen    timestamptz not null default now(),
@@ -64,6 +65,8 @@ create table av.messages (
   body       text not null check (char_length(body) between 1 and 500),
   created_at timestamptz not null default now()
 );
+create unique index participants_seat_uq on av.participants (plane_code, seat) where seat is not null;
+
 create index messages_plane_id_idx on av.messages (plane_code, id);
 create index planes_session_idx on av.planes (session_code);
 create index sessions_created_idx on av.sessions (created_at);
@@ -147,7 +150,7 @@ end $$;
 create function av.parts_json(p_code text) returns jsonb
 language sql stable set search_path = '' as $$
   select coalesce(jsonb_object_agg(x.id, jsonb_build_object(
-    'name', x.name, 'role', x.role,
+    'name', x.name, 'role', x.role, 'seat', x.seat,
     'online', x.last_seen > now() - interval '30 seconds',
     'connectedAt', av.ms(x.connected_at))), '{}'::jsonb)
   from av.participants x where x.plane_code = p_code
@@ -353,7 +356,7 @@ begin
     'meta', jsonb_build_object('numParticipants', p.num_participants, 'timerMinutes', p.timer_minutes, 'planeVersion', p.version),
     'state', v_state,
     'parts', av.parts_json(v_code),
-    'me', jsonb_build_object('pid', x.id, 'role', x.role, 'symbols', to_jsonb(x.symbols)),
+    'me', jsonb_build_object('pid', x.id, 'role', x.role, 'seat', x.seat, 'symbols', to_jsonb(x.symbols)),
     'msgs', v_msgs);
 end $$;
 
@@ -362,7 +365,7 @@ create function public.av_start(p_token text, p_code text)
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
   p av.planes%rowtype; pv av.plane_versions%rowtype;
-  v_ids uuid[]; v_roles text[]; i int; n int;
+  v_ids uuid[]; v_pool text[]; v_used text[]; v_free text[]; v_seat text; v_role text; v_k int := 0; i int; n int;
   v_all constant text[] := array['A','B1','B2','C','D','E','F','G','H','I','J'];
 begin
   select * into p from av.fac_plane(p_token, p_code);
@@ -379,12 +382,23 @@ begin
   n := coalesce(array_length(v_ids, 1), 0);
   if n < 6 then return jsonb_build_object('error','too_few', 'min', 6); end if;
 
-  select array_agg(r order by random()) into v_roles from unnest(v_all[1:n]) r;
+  -- papéis em jogo: os n primeiros. Quem escolheu um assento desses fica nele; o resto é sorteado.
+  v_pool := v_all[1:n];
+  select coalesce(array_agg(seat), '{}'::text[]) into v_used
+    from av.participants where id = any (v_ids) and seat = any (v_pool);
+  select coalesce(array_agg(r order by random()), '{}'::text[]) into v_free
+    from unnest(v_pool) r where not (r = any (v_used));
   select * into pv from av.plane_versions where version = p.version;
 
   for i in 1 .. n loop
-    update av.participants set role = v_roles[i],
-      symbols = array(select jsonb_array_elements_text(pv.sheets -> v_roles[i]))
+    select seat into v_seat from av.participants where id = v_ids[i];
+    if v_seat is not null and v_seat = any (v_pool) then
+      v_role := v_seat;
+    else
+      v_k := v_k + 1; v_role := v_free[v_k];
+    end if;
+    update av.participants set role = v_role,
+      symbols = array(select jsonb_array_elements_text(pv.sheets -> v_role))
     where id = v_ids[i];
   end loop;
 
@@ -411,6 +425,31 @@ begin
   select * into p from av.fac_plane(p_token, p_code);
   if p.code is null then return jsonb_build_object('error','forbidden'); end if;
   update av.planes set revealed = true where code = p.code and phase = 'ended';
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- Escolher (ou liberar, com null) o assento no lobby
+create function public.av_pick_seat(p_code text, p_token text, p_role text)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  v_code text := upper(coalesce(p_code, ''));
+  x av.participants%rowtype; p av.planes%rowtype;
+  v_all constant text[] := array['A','B1','B2','C','D','E','F','G','H','I','J'];
+begin
+  select * into p from av.planes where code = v_code for update;
+  if not found then return jsonb_build_object('error','not_found'); end if;
+  select * into x from av.participants where plane_code = v_code and token_hash = av.h(p_token);
+  if not found then return jsonb_build_object('error','not_member'); end if;
+  if p.phase <> 'lobby' then return jsonb_build_object('error','not_lobby'); end if;
+  if p_role is null or p_role = '' then
+    update av.participants set seat = null where id = x.id;
+    return jsonb_build_object('ok', true);
+  end if;
+  if not (p_role = any (v_all[1:p.num_participants])) then return jsonb_build_object('error','bad_seat'); end if;
+  if exists (select 1 from av.participants where plane_code = v_code and seat = p_role and id <> x.id) then
+    return jsonb_build_object('error','seat_taken');
+  end if;
+  update av.participants set seat = p_role where id = x.id;
   return jsonb_build_object('ok', true);
 end $$;
 

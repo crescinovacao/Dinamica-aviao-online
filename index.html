@@ -502,6 +502,15 @@
     .cb-state-no-contact .cb-chair { border: 1px solid var(--cabin-seat-neutral-border); background: var(--cabin-surface-card); }
     .cb-state-no-contact .cb-role { color: var(--cabin-text-secondary); }
     .cb-offline { opacity: .45; }
+    /* escolha de assento (sala de espera) */
+    .cb-pick { cursor: pointer; }
+    .cb-pick:focus-visible { outline: none; }
+    .cb-pick:hover .cb-chair, .cb-pick:focus-visible .cb-chair { box-shadow: 0 0 0 3px color-mix(in srgb, var(--cabin-accent) 35%, transparent); }
+    .cb-free .cb-chair { border: 1.5px dashed var(--cabin-accent); background: var(--cabin-surface-card); }
+    .cb-free .cb-role { color: var(--cabin-accent-text); }
+    .cb-free .cb-name { color: var(--cabin-text-secondary); font-weight: 500; }
+    .cb-free .cb-presence { display: none; }
+    .chip-seat { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--cabin-accent-soft, #e6f2ff); color: var(--cabin-accent-text, #0b3e8f); font-size: 11px; font-weight: 800; }
 
     /* Cabin legend */
     .cabin-legend {
@@ -837,10 +846,16 @@
     <div class="card wait-card">
       <span class="pulse" aria-hidden="true"></span>
       <h1>Você está na sala</h1>
-      <p class="muted">A pessoa facilitadora vai iniciar a dinâmica em breve. Mantenha esta página aberta: seu papel será sorteado nesse momento.</p>
+      <p class="muted">A pessoa facilitadora vai iniciar a dinâmica em breve. Mantenha esta página aberta e escolha seu assento abaixo. Quem não escolher recebe um assento ao iniciar.</p>
       <p class="count-line"><b id="parLobbyCount">1</b> de <span id="parLobbyMax">6</span> pessoas na sala</p>
       <ul class="chips" id="parLobbyList"></ul>
       <div id="parLobbyRoleInfo" class="mt-12"></div>
+    </div>
+    <div class="card" id="parSeatCard" style="padding:16px 12px">
+      <h2 class="card-title" style="padding:0 8px">Escolha seu assento</h2>
+      <p class="muted small" style="padding:0 8px;margin-bottom:10px">Toque em um assento livre (tracejado). Toque no seu assento de novo para liberar.</p>
+      <div id="parSeatInner"></div>
+      <p class="muted small" style="padding:0 8px;margin-top:10px">Se entrarem menos pessoas que o previsto, os últimos assentos não serão usados e quem escolheu um deles recebe outro.</p>
     </div>
   </main>
 
@@ -1530,11 +1545,15 @@ function copyText(text, btnEl) {
 function copyLink(code, btnEl) { copyText(parLink(code), btnEl); }
 function copyCode(code, btnEl) { copyText(code, btnEl); }
 
+// Ordem de exibição: papéis na sequência A, B1, B2, C…; quem ainda não tem papel ou assento vai depois, por ordem de entrada
+function roleRank(r) { const i = ROLE_ORDER.indexOf(r); return i < 0 ? 99 : i; }
+function bySeatThenEntry(a, b) { return roleRank(a.role || a.seat) - roleRank(b.role || b.seat) || (a.connectedAt||0) - (b.connectedAt||0); }
+
 function plural(n, one, many) { return n === 1 ? one : many; }
 
 function lobbyRowHtml(p, i) {
   const cache  = planeCache[p.code] || {};
-  const sorted = Object.values(cache.parts || {}).sort((a,b) => (a.connectedAt||0)-(b.connectedAt||0));
+  const sorted = Object.values(cache.parts || {}).sort(bySeatThenEntry);
   const count  = sorted.length;
   const max    = p.numParticipants;
   const ready  = count >= MIN_PLAYERS;
@@ -1565,7 +1584,7 @@ function lobbyRowHtml(p, i) {
       <p><b>${count} de ${max} pessoas</b> na sala (mínimo ${MIN_PLAYERS})</p>
     </div>
     ${sorted.length
-      ? `<ul class="chips">${sorted.map(x => `<li><span class="dot-online"></span>${esc(x.name)}</li>`).join('')}</ul>`
+      ? `<ul class="chips">${sorted.map(x => `<li><span class="dot-online"></span>${esc(x.name)}${x.seat ? `<span class="chip-seat">${esc(x.seat)}</span>` : ''}</li>`).join('')}</ul>`
       : `<ul class="chips"><li class="empty" style="background:none;border:none;padding:0;font-weight:400;color:var(--muted)">Aguardando pessoas entrarem...</li></ul>`}
     <button class="btn btn-primary btn-full" ${ready ? '' : 'disabled'} onclick="startPlane('${c}')">Iniciar Avião ${i+1}</button>
     <p class="hint">${hint}</p>
@@ -1671,7 +1690,7 @@ function renderActivePlane() {
   const phase = state.phase || 'lobby';
   if (phase === 'lobby') { content.innerHTML = `<div class="lobby-grid">${lobbyRowHtml(p, idx)}</div>`; return; }
   const code   = esc(activePlane);
-  const parArr = Object.entries(parts).sort(([,a],[,b]) => (a.connectedAt||0)-(b.connectedAt||0));
+  const parArr = Object.entries(parts).sort(([,a],[,b]) => bySeatThenEntry(a, b));
 
   // Estado e controles (no alto, sempre à vista)
   let controls;
@@ -2083,7 +2102,7 @@ async function rejoinSilently() {
 }
 function leaveToHome() {
   clearTimeout(parPollTimer); clearAv();
-  roomCode = null; myPRole = null; myUid = null; lastState = {}; lastParts = {};
+  roomCode = null; myPRole = null; myUid = null; mySeat = null; lastState = {}; lastParts = {};
   showScreen('s-home');
 }
 
@@ -2094,6 +2113,7 @@ function applyPar(r) {
   cfgTimerMin     = r.meta?.timerMinutes    || cfgTimerMin;
   cfgPlaneVersion = r.meta?.planeVersion    || cfgPlaneVersion;
   if (me.role && !myPRole) myPRole = me.role;
+  mySeat = me.seat || null;
 
   lastParts = r.parts || {};
   allRoles = []; roleToUid = {}; uidToRole = {}; uidToName = {};
@@ -2112,7 +2132,7 @@ function applyPar(r) {
     addChatMsg(msg);
   });
 
-  const sig = JSON.stringify([lastState, lastParts, mySymbols, myPRole]);
+  const sig = JSON.stringify([lastState, lastParts, mySymbols, myPRole, mySeat, cfgNumPart]);
   if (sig === parSig) return;
   handlePar(lastState, lastParts);
   parSig = sig;
@@ -2132,14 +2152,13 @@ function handlePar(state, parts) {
   if (phase === 'lobby') {
     document.getElementById('pp-lobby').style.display = 'block';
     document.getElementById('pp-game').style.display  = 'none';
-    const names = Object.values(parts).sort((a,b) => (a.connectedAt||0)-(b.connectedAt||0)).map(x => x.name || '?');
-    document.getElementById('parLobbyCount').textContent = names.length;
+    const people = Object.values(parts).sort(bySeatThenEntry);
+    document.getElementById('parLobbyCount').textContent = people.length;
     document.getElementById('parLobbyMax').textContent   = cfgNumPart;
     document.getElementById('parLobbyList').innerHTML    =
-      names.map(n => `<li><span class="dot-online"></span>${esc(n)}</li>`).join('');
-    if (me.role) {
-      document.getElementById('parLobbyRoleInfo').innerHTML = `Seu papel: ${roleBadge(me.role)}`;
-    }
+      people.map(x => `<li><span class="dot-online"></span>${esc(x.name || '?')}${x.seat ? `<span class="chip-seat">${esc(x.seat)}</span>` : ''}</li>`).join('');
+    document.getElementById('parLobbyRoleInfo').innerHTML = mySeat ? `Seu assento: ${roleBadge(mySeat)}` : '';
+    renderSeatPicker(parts);
     return;
   }
 
@@ -2382,15 +2401,19 @@ function cabinSeatHtml(participant, placement) {
   const max = CABIN_SPEC.seat.maxNameChars;
   const name = participant.name || '';
   const shown = name.length > max ? name.slice(0, max - 1) + '…' : name;
-  const label = `${name || 'Vaga livre'}, papel ${participant.role}. ${CABIN_STATE_LABEL[participant.state]}. ${participant.online ? 'online' : 'offline'}.`;
-  const cls = ['cb-seat', `cb-side-${placement.side}`, `cb-state-${participant.state}`, participant.online ? '' : 'cb-offline'].filter(Boolean).join(' ');
-  return `<div class="${cls}" role="group" aria-label="${esc(label)}" style="left:${placement.x}px;top:${placement.y}px"
+  const pick = !!participant.pick, free = !!participant.free;
+  const label = pick
+    ? (free ? `Assento ${participant.role}, livre. Toque para escolher.` : `Seu assento: ${participant.role}. Toque para liberar.`)
+    : `${name || 'Vaga livre'}, ${free ? 'assento' : 'papel'} ${participant.role}. ${CABIN_STATE_LABEL[participant.state]}. ${participant.online ? 'online' : 'offline'}.`;
+  const cls = ['cb-seat', `cb-side-${placement.side}`, `cb-state-${participant.state}`, participant.online ? '' : 'cb-offline', pick ? 'cb-pick' : '', free ? 'cb-free' : ''].filter(Boolean).join(' ');
+  const shownName = free ? 'Livre' : shown;
+  return `<div class="${cls}" role="${pick ? 'button' : 'group'}"${pick ? ` tabindex="0" aria-pressed="${!free}"` : ''} aria-label="${esc(label)}" style="left:${placement.x}px;top:${placement.y}px"
       data-role="${esc(participant.role)}" data-state="${participant.state}" data-online="${participant.online}">
     ${participant.state === 'self' ? '<span class="cb-ring" aria-hidden="true"></span>' : ''}
     <span class="cb-connector" aria-hidden="true"></span>
     <span class="cb-pill" aria-hidden="true"></span>
     <span class="cb-chair" aria-hidden="true"><span class="cb-role">${esc(participant.role)}</span></span>
-    <span class="cb-name" title="${esc(name)}">${esc(shown)}</span>
+    <span class="cb-name" title="${esc(name)}">${esc(shownName)}</span>
     <span class="cb-presence" aria-hidden="true"></span>
   </div>`;
 }
@@ -2424,6 +2447,62 @@ function cabinViewportHtml(frameHtml, hostWidth) {
   return `<div class="cb-viewport${cropped ? ' is-cropped' : ''}" style="width:${vpW.toFixed(2)}px;height:${(H * scale).toFixed(2)}px">
     <div class="cb-scaler" style="width:${W}px;height:${H}px;transform:translateX(${(-shiftX).toFixed(2)}px) scale(${scale.toFixed(4)})">${frameHtml}</div>
   </div>`;
+}
+
+// ── Escolha de assento na sala de espera ──
+let mySeat = null, seatBusy = false, seatHostWidth = -1, seatObserver = null, lastSeatParts = null;
+
+function renderSeatPicker(parts) {
+  const inner = document.getElementById('parSeatInner');
+  if (!inner) return;
+  lastSeatParts = parts;
+  const count = cfgNumPart;
+  if (!CABIN_SPEC.rowCenters[count]) { document.getElementById('parSeatCard').style.display = 'none'; return; }
+  document.getElementById('parSeatCard').style.display = '';
+
+  if (!seatObserver && typeof ResizeObserver !== 'undefined') {
+    seatObserver = new ResizeObserver(() => {
+      if (inner.clientWidth !== seatHostWidth && lastSeatParts) renderSeatPicker(lastSeatParts);
+    });
+    seatObserver.observe(inner);
+    inner.addEventListener('click', e => { const el = e.target.closest('.cb-pick'); if (el) pickSeat(el.dataset.role); });
+    inner.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const el = e.target.closest('.cb-pick'); if (!el) return;
+      e.preventDefault(); pickSeat(el.dataset.role);
+    });
+  }
+  seatHostWidth = inner.clientWidth;
+
+  const bySeat = {};
+  Object.entries(parts || {}).forEach(([uid, p]) => { if (p && p.seat) bySeat[p.seat] = { uid, ...p }; });
+  const focused = document.activeElement && document.activeElement.closest && document.activeElement.closest('#parSeatInner .cb-pick');
+  const focusRole = focused ? focused.dataset.role : null;
+  const people = cabinRoles(count).map(role => {
+    const o = bySeat[role], mine = !!o && o.uid === myUid;
+    return { id: o ? o.uid : `vaga-${role}`, name: o ? (o.name || '') : '', role,
+             state: mine ? 'self' : 'no-contact', online: true, pick: !o || mine, free: !o };
+  });
+  inner.innerHTML = cabinViewportHtml(cabinHtml(count, people), seatHostWidth);
+  if (focusRole) { const el = inner.querySelector(`.cb-pick[data-role="${focusRole}"]`); if (el) el.focus({ preventScroll: true }); }
+}
+
+async function pickSeat(role) {
+  if (seatBusy || !roomCode) return;
+  seatBusy = true;
+  try {
+    await rpc('av_pick_seat', { p_code: roomCode, p_token: parToken(), p_role: role === mySeat ? null : role });
+  } catch(e) {
+    const msgs = {
+      seat_taken: 'Esse assento acabou de ser escolhido por outra pessoa.',
+      not_lobby:  'A dinâmica já começou.',
+      bad_seat:   'Assento inválido.',
+    };
+    toast(msgs[e.code] || connErr(e));
+  } finally {
+    seatBusy = false;
+    parPollNow();
+  }
 }
 
 let lastCabinParts = null;
