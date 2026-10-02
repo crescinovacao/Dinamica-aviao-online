@@ -902,9 +902,8 @@
         </section>
 
         <section class="card" id="parSymCard" aria-labelledby="symTitle">
-          <h2 class="card-title" id="symTitle">Sua folha de símbolos</h2>
+          <h2 class="sr-only" id="symTitle">Sua folha de símbolos</h2>
           <div class="sym-grid" id="parSymGrid"></div>
-          <p class="sym-hint">Descreva seus símbolos por mensagem. Não mostre sua tela para outras pessoas.</p>
         </section>
 
         <div class="game-tabs" role="tablist" aria-label="Seções da dinâmica">
@@ -1120,7 +1119,7 @@ function roleBadge(role) {
 }
 function symHtml(id) {
   const s = SYM[id] || {};
-  return `<div class="sym-card" role="img" aria-label="${esc(s.name||id)}"><span aria-hidden="true">${esc(s.ch||'?')}</span><span class="sym-card-label" aria-hidden="true">${esc(s.name||id)}</span></div>`;
+  return `<div class="sym-card" role="img" aria-label="${esc(s.name||id)}"><span aria-hidden="true">${esc(s.ch||'?')}</span></div>`;
 }
 function seatCls(role) {
   if (role === 'A') return 'seat-A';
