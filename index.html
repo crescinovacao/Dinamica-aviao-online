@@ -31,8 +31,8 @@
       --warn-tint:   #FDF3E3;
       --danger:      #B91C1C;
       --danger-tint: #FDECEC;
-      --shadow:      0 1px 2px rgba(33,0,0,.06), 0 1px 3px rgba(33,0,0,.04);
-      --radius:      12px;
+      --shadow:      0 1px 2px rgba(33,0,0,.05), 0 4px 14px rgba(33,0,0,.04);
+      --radius:      14px;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { -webkit-text-size-adjust: 100%; }
@@ -76,6 +76,14 @@
       font-family: 'Raleway', sans-serif; font-weight: 700; font-size: 14px;
       color: rgba(255,255,255,.88); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .hback {
+      display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px 0 8px; margin-left: -8px;
+      border: none; border-radius: 999px; background: transparent; color: rgba(255,255,255,.88); cursor: pointer;
+      font-family: 'Raleway', sans-serif; font-weight: 700; font-size: 14px; transition: background .2s ease;
+    }
+    .hback:hover { background: rgba(255,255,255,.14); color: #fff; }
+    .hback:focus-visible { outline-color: var(--blue-soft); box-shadow: none; }
+    .hback svg { width: 18px; height: 18px; }
     .hright { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
     .hbadge {
       background: rgba(255,255,255,.16); color: #fff; padding: 5px 12px;
@@ -98,6 +106,11 @@
     .container-wide { max-width: 1100px; }
     .container-form { max-width: 640px; }
 
+    /* ── Cabeçalho de página ── */
+    .page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px; margin-bottom: 20px; }
+    .page-head h1 { font-size: clamp(24px, 5vw, 30px); color: var(--navy); letter-spacing: -.5px; margin-bottom: 4px; }
+    .page-head p { font-size: 15px; color: var(--muted); max-width: 560px; }
+
     /* ── Card ── */
     .card {
       background: var(--card); border-radius: var(--radius);
@@ -115,7 +128,9 @@
     }
 
     /* ── Form ── */
-    .field { margin-bottom: 20px; }
+    .field { margin-bottom: 22px; padding-bottom: 22px; border-bottom: 1px solid var(--border); }
+    .field.last { border-bottom: none; padding-bottom: 0; margin-bottom: 14px; }
+    .field.plain { border-bottom: none; padding-bottom: 0; margin-bottom: 16px; }
     .field-label, label.field-label {
       display: block; font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 4px;
     }
@@ -137,14 +152,15 @@
       transition: background .2s ease, border-color .2s ease, color .2s ease;
     }
     .seg button:hover { border-color: var(--blue); }
+    .seg.is-wide button { padding-left: 16px; padding-right: 16px; }
     .seg button[aria-checked="true"] {
       background: var(--blue-strong); border-color: var(--blue-strong); color: #fff;
     }
     .summary {
       background: var(--blue-tint); border-radius: 10px; padding: 12px 14px;
-      font-size: 14px; color: var(--navy); margin-bottom: 16px;
+      font-size: 14px; color: var(--navy); margin: 4px 0 16px; line-height: 1.5;
     }
-    .inline-input { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .inline-input { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
     .inline-input input { max-width: 110px; }
     .inline-input span { font-size: 13px; color: var(--muted); }
 
@@ -173,6 +189,8 @@
     .mt-8  { margin-top: 8px; }
     .mt-12 { margin-top: 12px; }
     .row-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+    .answer-panel .row-btns .btn-green { flex: 1.6 1 0; }
+    .answer-panel .row-btns .btn-outline { flex: 1 1 0; }
 
     /* ── Chips e badges ── */
     .chip {
@@ -196,40 +214,30 @@
     .rbadge-C, .rbadge-D, .rbadge-E, .rbadge-F,
     .rbadge-G, .rbadge-H, .rbadge-I, .rbadge-J { background: #E8F6EC; color: #14532D; }
 
-    /* ── Home ── */
-    .hero { text-align: center; padding: 40px 0 28px; }
-    .eyebrow {
-      display: inline-block; font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 12px;
-      letter-spacing: 1.2px; text-transform: uppercase; color: var(--blue-strong);
-      background: var(--blue-tint); padding: 5px 14px; border-radius: 999px; margin-bottom: 16px;
-    }
-    .hero h1 { font-size: clamp(32px, 7vw, 48px); color: var(--navy); letter-spacing: -1px; margin-bottom: 12px; }
-    .lead { font-size: clamp(15px, 3.6vw, 17px); color: var(--muted); max-width: 520px; margin: 0 auto; line-height: 1.6; }
-    .entry-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 8px; }
-    .entry-card { margin-bottom: 0; display: flex; flex-direction: column; gap: 10px; }
-    .entry-card .card-title { margin-bottom: 0; }
-    .entry-card p { font-size: 14px; }
-    .entry-card .btn { margin-top: auto; }
-    .code-row { display: flex; gap: 8px; margin-top: auto; }
-    .code-row input { text-transform: uppercase; text-align: center; letter-spacing: 4px; font-family: 'Raleway', sans-serif; font-weight: 800; }
-    .how { margin-top: 28px; }
-    .how > h2 { font-size: 16px; color: var(--navy); margin-bottom: 12px; text-align: center; }
-    .steps { list-style: none; display: grid; grid-template-columns: 1fr; gap: 10px; }
-    .steps li {
-      display: flex; gap: 12px; align-items: flex-start;
-      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px;
-      font-size: 14px;
-    }
+    /* ── Home (só facilitação) ── */
+    .home-wrap { max-width: 1080px; margin: 0 auto; padding: 28px 20px 56px; display: grid; gap: 32px; }
+    .home-copy h1 { font-size: clamp(34px, 8vw, 52px); color: var(--navy); letter-spacing: -1.2px; line-height: 1.05; margin-bottom: 16px; }
+    .lead { font-size: clamp(16px, 3.8vw, 18px); color: var(--muted); max-width: 520px; line-height: 1.6; }
+    .home-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin: 26px 0 10px; }
+    .btn-lg { min-height: 52px; padding: 14px 28px; font-size: 16px; border-radius: 12px; }
+    .home-note { font-size: 14px; color: var(--muted); max-width: 440px; }
+    .how { margin-top: 36px; }
+    .how > h2 { font-size: 15px; color: var(--ink); margin-bottom: 14px; }
+    .steps { list-style: none; position: relative; display: grid; gap: 14px; max-width: 520px; }
+    .steps::before { content: ''; position: absolute; left: 13px; top: 14px; bottom: 14px; width: 2px; background: var(--border); }
+    .steps li { position: relative; display: flex; gap: 14px; align-items: flex-start; font-size: 15px; line-height: 1.45; }
+    .steps li > span:last-child { padding-top: 2px; }
     .step-n {
-      flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+      position: relative; flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
       background: var(--blue-strong); color: #fff; display: flex; align-items: center; justify-content: center;
-      font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 13px;
+      font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 13px; box-shadow: 0 0 0 4px var(--bg);
     }
-
-    /* ── Código da sala (grande, para projetar) ── */
-    .code-big {
-      font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 40px;
-      letter-spacing: 8px; color: var(--navy); line-height: 1.1; padding: 10px 0 12px;
+    .home-fig { margin: 0; background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 18px 12px 16px; box-shadow: var(--shadow); }
+    .home-fig figcaption { padding: 0 10px; margin-top: 12px; font-size: 14px; color: var(--muted); text-align: center; }
+    .home-fig figcaption b { color: var(--ink); }
+    .home-fig .cabin-legend { margin-top: 10px; }
+    @media (min-width: 900px) {
+      .home-wrap { grid-template-columns: minmax(0, 1fr) minmax(0, 520px); gap: 56px; align-items: center; padding-top: 56px; }
     }
 
     /* ── Barra de progresso do lobby ── */
@@ -258,19 +266,18 @@
 
     /* ── Símbolos ── */
     .sym-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-    .sym-grid.answer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .sym-grid.answer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .sym-grid.answer-grid .sym-card { min-height: 78px; font-size: 36px; }
     .sym-card {
       background: var(--bg); border: 2px solid var(--border); border-radius: var(--radius);
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
       padding: 10px 2px; min-height: 76px;
       font-size: clamp(26px, 7vw, 38px); line-height: 1.1; font-weight: 800; color: var(--ink); user-select: none;
     }
-    .sym-card-label { font-size: 11px; color: var(--muted); font-family: 'Raleway', sans-serif; font-weight: 700; text-align: center; line-height: 1.15; }
     .sym-card.pickable { cursor: pointer; transition: border-color .2s ease, background .2s ease; font-family: inherit; }
     button.sym-card { width: 100%; }
     .sym-card.pickable:hover { border-color: var(--blue); background: var(--blue-tint); }
     .sym-card.picked { border-color: var(--blue-strong); background: var(--blue-tint); box-shadow: inset 0 0 0 1px var(--blue-strong); }
-    .sym-hint { font-size: 13px; color: var(--muted); margin-top: 10px; }
 
     /* ── Chat ── */
     .chat-area {
@@ -370,24 +377,38 @@
     .answer-info { min-height: 22px; font-size: 14px; color: var(--navy); font-weight: 700; margin: 12px 0; }
 
     /* ── Espera (participante) ── */
-    .wait-card { text-align: center; padding: 32px 20px; }
-    .wait-card h1, .wait-card h2 { font-size: 22px; margin: 14px 0 8px; color: var(--navy); }
-    .wait-card .chips { justify-content: center; margin-top: 14px; }
-    .pulse { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--green); position: relative; }
+    .wait-card { padding: 20px; }
+    .wait-head { display: flex; align-items: center; gap: 18px; margin-bottom: 10px; }
+    .wait-head .pulse { margin: 0 6px; }
+    .wait-head h1 { font-size: 20px; color: var(--navy); }
+    .wait-card .count-line { margin: 0; }
+    .wait-card > p { font-size: 14px; }
+    .wait-card .chips { margin-top: 14px; }
+    .pulse { display: inline-block; flex-shrink: 0; width: 14px; height: 14px; border-radius: 50%; background: var(--green); position: relative; }
     .pulse::after {
       content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--green);
       opacity: .5; animation: pulse 1.8s ease-out infinite;
     }
     @keyframes pulse { from { transform: scale(.6); opacity: .6; } to { transform: scale(1.5); opacity: 0; } }
     .count-line { font-size: 14px; color: var(--muted); margin-top: 14px; }
+    .seat-line:empty { display: none; }
+    .recover { margin-top: 4px; }
+    .recover summary { cursor: pointer; font-size: 14px; font-weight: 700; color: var(--navy); min-height: 40px; display: flex; align-items: center; }
+    .recover .code-row { margin-top: 12px; }
+    .code-row { display: flex; gap: 8px; }
+    .code-row input { text-transform: uppercase; }
+    .code-row input::placeholder { text-transform: none; }
+    .seat-line { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 14px; color: var(--muted); }
     .count-line b { color: var(--ink); font-size: 16px; }
-    .join-room { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--blue-tint); border-radius: 10px; margin-bottom: 18px; }
-    .join-room b { font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 4px; color: var(--navy); }
-    .join-room span { font-size: 13px; color: var(--muted); }
+    .join-room { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; background: var(--blue-tint); border-radius: 999px; margin-bottom: 14px; font-size: 13px; color: var(--muted); }
+    .join-room b { font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 1.5px; color: var(--navy); }
+    .join-lead { font-size: 15px; color: var(--muted); margin-bottom: 20px; }
+    .out-card { text-align: center; padding: 36px 22px; }
+    .out-card h1 { font-size: 22px; color: var(--navy); margin-bottom: 8px; }
 
     /* ── Resultado ── */
     .result-box { text-align: center; padding: 8px 0; }
-    .result-glyph { font-size: 64px; line-height: 1.1; color: var(--ink); margin: 6px 0; font-weight: 800; }
+    .result-glyph { font-size: 72px; line-height: 1.1; color: var(--ink); margin: 6px 0; font-weight: 800; }
     .result-name { font-size: 14px; color: var(--muted); margin-bottom: 10px; }
     .result-ok, .result-err {
       padding: 12px 18px; border-radius: 10px; font-weight: 800; margin: 10px 0;
@@ -546,6 +567,11 @@
       background: var(--danger); color: #fff; font-size: 11px; align-items: center; justify-content: center;
     }
     @media (max-width: 899px) {
+      /* celular: a conversa ocupa o resto da tela, com o campo de mensagem sempre embaixo e sem sobrepor nada */
+      #pp-game .game-grid { min-height: calc(100dvh - 56px - 40px); }
+      #parChatCard { flex: 1 1 auto; display: flex; flex-direction: column; }
+      #parChatCard .chat-area { flex: 1 1 auto; height: auto; min-height: 200px; max-height: none; }
+      #parChatCard .card-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; margin: 0; }
       #pp-game[data-tab="chat"] #parCabinWrap { display: none !important; }
       #pp-game[data-tab="map"] #parChatCard { display: none; }
     }
@@ -564,7 +590,7 @@
       #pp-game.is-ended .game-left { display: none; }
     }
     #pp-game.is-ended .game-tabs { display: none; }
-    #pp-game.is-ended #parChatCard { display: block !important; }
+    #pp-game.is-ended #parChatCard { display: flex !important; }
 
     /* ═══════════════════════════
        ABAS (facilitação)
@@ -593,28 +619,31 @@
     /* ═══════════════════════════
        LOBBY E VISÃO GERAL (facilitação)
     ═══════════════════════════ */
-    .flow-hint {
-      display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center;
-      font-size: 14px; color: var(--muted); margin-bottom: 16px;
-    }
-    .flow-hint span { display: inline-flex; align-items: center; gap: 8px; }
-    .flow-hint .step-n { width: 24px; height: 24px; font-size: 12px; }
-    .lobby-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    .lobby-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 16px; align-items: start; }
     .plane-card { margin-bottom: 0; }
     .plane-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .plane-head h3 { font-size: 16px; color: var(--navy); }
-    .plane-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .plane-head h3 { font-size: 18px; color: var(--navy); }
+    .plane-sub { font-size: 13px; color: var(--muted); margin: 2px 0 14px; }
+    .plane-sub b { font-family: 'Raleway', sans-serif; font-weight: 800; color: var(--ink); letter-spacing: 1px; }
+    .link-box {
+      display: block; padding: 10px 12px; margin-bottom: 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border);
+      font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: all;
+    }
+    .plane-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+    .plane-actions .btn { flex: 1; }
     .plane-card .hint { font-size: 13px; color: var(--muted); margin-top: 10px; text-align: center; }
+    .plane-card .progress { margin-top: 0; }
     .plane-card .chips { margin-bottom: 14px; min-height: 30px; }
     .plane-card .empty { font-size: 13px; color: var(--muted); }
     .overview-summary { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
     .stat {
       background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 12px 18px; min-width: 130px;
+      padding: 12px 18px; min-width: 130px; flex: 0 1 170px;
     }
     .stat b { display: block; font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 26px; color: var(--navy); line-height: 1.1; }
     .stat span { font-size: 13px; color: var(--muted); }
-    .overview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .overview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .section-title { font-size: 16px; color: var(--navy); margin: 6px 0 12px; }
     .overview-card {
       background: var(--card); border-radius: var(--radius);
       padding: 16px; border: 1.5px solid var(--border);
@@ -635,20 +664,24 @@
       .top-header { padding: 0 14px; gap: 10px; }
       .top-header .title { display: none; }
       .brand-sep { display: none; }
-      .code-big { font-size: 34px; letter-spacing: 6px; }
-      .sym-card-label { display: none; }
-      .sym-card { min-height: 64px; padding: 12px 2px; }
-      .sym-grid.answer-grid .sym-card-label { display: block; }
-      .role-avatar { width: 46px; height: 46px; font-size: 18px; }
+      .container { padding: 14px 14px 40px; }
+      .card { padding: 16px; margin-bottom: 12px; }
+      .sym-card { min-height: 60px; padding: 10px 2px; }
+      .role-avatar { width: 40px; height: 40px; font-size: 16px; }
+      .role-card { gap: 12px; }
+      .role-card h2 { font-size: 16px; }
+      .role-card p { font-size: 13px; line-height: 1.4; }
+      .briefing { margin-top: 10px; padding: 10px 12px; font-size: 13px; }
+      .submit-hero { padding: 12px 16px; margin-bottom: 12px; }
+      .submit-hero-label { font-size: 15px; }
       .row-btns .btn { flex: 1; }
-      .chat-compose { position: sticky; bottom: 0; background: #fff; padding: 8px 0 2px; margin-top: 4px; z-index: 5; }
-      .chat-area { height: 40vh; }
+      .chat-compose { padding-bottom: env(safe-area-inset-bottom); }
+      .page-head .btn { width: 100%; }
+      .qr-dialog-body { padding: 22px 18px 18px; }
+      .home-wrap { padding: 20px 16px 44px; gap: 28px; }
+      .home-cta .btn-lg { width: 100%; }
     }
     @media (min-width: 640px) {
-      .entry-grid { grid-template-columns: 1fr 1fr; }
-      .steps { grid-template-columns: repeat(3, 1fr); }
-      .steps li { flex-direction: column; }
-      .lobby-grid { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
       .result-pair { grid-template-columns: 1fr 1fr; }
     }
     @media (min-width: 768px) {
@@ -662,12 +695,17 @@
       *, *::before, *::after { animation: none !important; transition: none !important; }
     }
 
-.qr-panel { display:flex; align-items:center; gap:16px; margin:0 0 14px; padding:14px; border:1px solid var(--border); border-radius:12px; background:#fff; }
-.qr-panel .qr-img { flex:none; line-height:0; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
-.qr-panel .qr-img svg { display:block; width:168px; height:168px; max-width:100%; }
-.qr-panel p { margin:0; font-size:14px; color:var(--muted); line-height:1.45; }
-@media (max-width:480px){ .qr-panel { flex-direction:column; text-align:center; } }
 
+/* Diálogo do QR code (para projetar) */
+.qr-dialog { margin: auto; border: none; border-radius: 20px; padding: 0; width: min(92vw, 560px); max-height: 94vh; background: #fff; color: var(--ink); box-shadow: 0 24px 80px rgba(33,0,0,.35); }
+.qr-dialog::backdrop { background: rgba(33,0,0,.62); }
+.qr-dialog-body { padding: 28px 28px 24px; text-align: center; }
+.qr-dialog h2 { font-size: 24px; color: var(--navy); }
+.qr-dialog .qr-sub { font-size: 15px; color: var(--muted); margin: 4px 0 18px; }
+.qr-dialog .qr-img { display: inline-block; line-height: 0; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: #fff; }
+.qr-dialog .qr-img svg { display: block; width: min(68vw, 340px); height: min(68vw, 340px); }
+.qr-dialog .qr-link { margin: 16px auto 18px; max-width: 100%; font-size: 14px; color: var(--muted); overflow-wrap: anywhere; }
+.qr-dialog .row-btns { justify-content: center; }
 .gabarito { margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
 .gab-box { display:flex; align-items:center; gap:12px; margin-top:10px; padding:12px; border-radius:12px; background:#F5F7FA; border:1px solid var(--border); }
 .gab-glyph { font-size:34px; line-height:1; flex:none; }
@@ -679,65 +717,67 @@
 <div id="connBanner" class="conn-banner" role="status" hidden>Sem conexão. Tentando reconectar...</div>
 <noscript><p style="padding:16px;text-align:center">Esta dinâmica precisa de JavaScript ativado no navegador.</p></noscript>
 
-<!-- HOME -->
+<!-- HOME (só a área da facilitação: quem participa entra pelo link ou QR code) -->
 <div id="s-home" class="screen active">
   <header class="top-header">
-    <div class="brand"><span class="wordmark">crescimentum</span></div>
+    <div class="brand"><span class="wordmark">crescimentum</span><span class="brand-sep"></span><span class="title">Dinâmica do Avião</span></div>
+    <div class="hright"><span class="hbadge">Facilitação</span></div>
   </header>
-  <main class="container">
-    <section class="hero">
-      <span class="eyebrow">Dinâmica online</span>
+  <main class="home-wrap">
+    <section class="home-copy">
       <h1>Dinâmica do Avião</h1>
-      <p class="lead">Cada pessoa recebe uma folha de símbolos e só pode conversar com algumas das outras. Juntas, descobrem qual símbolo aparece em todas as folhas.</p>
+      <p class="lead">Cada pessoa recebe uma folha de símbolos e só pode falar com algumas das outras. Juntas, descobrem qual símbolo aparece em todas as folhas.</p>
+      <div class="home-cta">
+        <button class="btn btn-primary btn-lg" onclick="goFac()">Criar sessão</button>
+        <button class="btn btn-outline btn-lg" id="btnResume" hidden onclick="resumeLast()"></button>
+      </div>
+      <p class="home-note">Vai participar? Abra o link ou o QR code que a pessoa facilitadora enviou.</p>
+
+      <section class="how" aria-labelledby="h-how">
+        <h2 id="h-how">Como conduzir</h2>
+        <ol class="steps">
+          <li><span class="step-n">1</span><span>Crie a sessão: quantos aviões, quantas pessoas por avião e o tempo.</span></li>
+          <li><span class="step-n">2</span><span>Envie o link ou mostre o QR code de cada avião. As pessoas entram só com o nome.</span></li>
+          <li><span class="step-n">3</span><span>Inicie cada avião quando houver pessoas suficientes e acompanhe as conversas.</span></li>
+          <li><span class="step-n">4</span><span>Revele o resultado ao grupo na hora do debriefing.</span></li>
+        </ol>
+      </section>
     </section>
 
-    <div class="entry-grid">
-      <section class="card entry-card" aria-labelledby="h-fac">
-        <h2 class="card-title" id="h-fac">Conduzir a dinâmica</h2>
-        <p class="muted">Crie a sessão, compartilhe o link de cada avião e acompanhe tudo em tempo real.</p>
-        <button class="btn btn-primary btn-full" onclick="goFac()">Iniciar dinâmica</button>
-      </section>
-      <section class="card entry-card" aria-labelledby="h-par">
-        <h2 class="card-title" id="h-par">Sou participante</h2>
-        <p class="muted">Abra o link que a pessoa facilitadora compartilhou ou digite o código de 4 caracteres.</p>
-        <form class="code-row" onsubmit="goParWithCode(); return false;">
-          <label class="sr-only" for="homeCodeInp">Código da sala</label>
-          <input type="text" id="homeCodeInp" maxlength="4" placeholder="Código" autocomplete="off" autocapitalize="characters" spellcheck="false">
-          <button class="btn btn-outline" type="submit">Entrar</button>
-        </form>
-        <div class="err-msg" id="homeCodeErr" role="alert"></div>
-      </section>
-    </div>
-
-    <section class="how" aria-labelledby="h-how">
-      <h2 id="h-how">Como funciona</h2>
-      <ol class="steps">
-        <li><span class="step-n">1</span><span>A pessoa facilitadora cria a sessão e compartilha o link de cada avião.</span></li>
-        <li><span class="step-n">2</span><span>Cada participante recebe um papel sorteado (A, B1, B2, C e seguintes) e uma folha com 5 símbolos.</span></li>
-        <li><span class="step-n">3</span><span>Só algumas pessoas podem conversar entre si. Quem envia a resposta final é a Pessoa A.</span></li>
-      </ol>
-    </section>
+    <figure class="home-fig">
+      <div id="homeCabin" role="img" aria-label="Mapa da cabine de um avião com 8 pessoas"></div>
+      <ul class="cabin-legend" aria-hidden="true">
+        <li class="cabin-legend-item"><span class="lg lg-self"></span>Pessoa A</li>
+        <li class="cabin-legend-item"><span class="lg lg-can"></span>Pode conversar com A</li>
+        <li class="cabin-legend-item"><span class="lg lg-none"></span>Sem contato com A</li>
+      </ul>
+      <figcaption>Exemplo: a <b>Pessoa A</b> só conversa com <b>B1</b> e <b>B2</b>.</figcaption>
+    </figure>
   </main>
 </div>
 
 <!-- FAC SETUP -->
 <div id="s-fac-setup" class="screen">
   <header class="top-header">
-    <div class="brand"><span class="wordmark">crescimentum</span><span class="brand-sep"></span><span class="title">Dinâmica do Avião</span></div>
+    <button class="hback" type="button" onclick="backHome()" aria-label="Voltar ao início"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l-6 6 6 6"/></svg>Início</button>
+    <div class="brand"><span class="brand-sep"></span><span class="wordmark">crescimentum</span></div>
     <div class="hright"><span class="hbadge">Facilitação</span></div>
   </header>
   <main class="container container-form">
+    <div class="page-head"><div>
+      <h1>Configurar sessão</h1>
+      <p>Defina o tamanho da turma. Depois você recebe o link e o QR code de cada avião.</p>
+    </div></div>
     <div class="card">
-      <h2 class="card-title">Configurar sessão</h2>
-
       <div class="field">
-        <span class="field-label" id="lblPlanes">Quantos aviões (grupos ao mesmo tempo)?</span>
+        <span class="field-label" id="lblPlanes">Aviões</span>
+        <p class="field-hint">Cada avião é um grupo jogando ao mesmo tempo.</p>
         <div class="seg" role="radiogroup" aria-labelledby="lblPlanes" data-for="numPlanesSel"></div>
         <input type="hidden" id="numPlanesSel" value="1">
       </div>
 
       <div class="field">
-        <span class="field-label" id="lblPart">Quantas pessoas por avião?</span>
+        <span class="field-label" id="lblPart">Pessoas por avião</span>
         <p class="field-hint">Mínimo de 6 para iniciar. Os papéis entram na ordem A, B1, B2, C, D e seguintes.</p>
         <div class="seg" role="radiogroup" aria-labelledby="lblPart" data-for="numPartSel"></div>
         <input type="hidden" id="numPartSel" value="6">
@@ -746,34 +786,34 @@
       <div class="field">
         <span class="field-label" id="lblTime">Tempo da dinâmica</span>
         <div class="seg" role="radiogroup" aria-labelledby="lblTime" data-for="timerMinInp"></div>
-        <div class="inline-input">
+        <div class="inline-input" id="timerCustomRow" hidden>
           <label class="sr-only" for="timerMinInp">Tempo em minutos</label>
           <input type="number" id="timerMinInp" value="15" min="0" max="90" inputmode="numeric">
-          <span>minutos (0 = sem cronômetro, máximo 90)</span>
+          <span>minutos (de 1 a 90)</span>
         </div>
       </div>
 
-      <div class="field" id="passWrap" hidden>
+      <div class="field last" id="passWrap" hidden>
         <label class="field-label" for="passInp">Senha de facilitação</label>
         <p class="field-hint">Esta instalação pede uma senha para criar sessões.</p>
         <input type="password" id="passInp" autocomplete="off" maxlength="64">
       </div>
 
       <p class="summary" id="setupSummary" aria-live="polite"></p>
-      <button class="btn btn-primary btn-full" id="btnCreate" onclick="createSession()">Criar sessão</button>
+      <button class="btn btn-primary btn-lg btn-full" id="btnCreate" onclick="createSession()">Criar sessão</button>
       <div class="err-msg" id="setupErr" role="alert"></div>
     </div>
 
-    <div class="card">
-      <h2 class="card-title">Recuperar sessão</h2>
-      <p class="muted small" style="margin-bottom:12px">Fechou a aba sem querer? Digite o código da sessão (4 caracteres) para voltar ao monitor, neste mesmo navegador.</p>
-      <div class="code-row" style="margin-top:0">
+    <details class="card recover">
+      <summary>Já criou uma sessão e fechou a aba?</summary>
+      <p class="muted small" style="margin-top:6px">Digite o código da sessão (4 caracteres) para voltar ao monitor. Só funciona neste mesmo navegador.</p>
+      <div class="code-row">
         <label class="sr-only" for="recCodeInp">Código da sessão</label>
         <input type="text" id="recCodeInp" maxlength="4" placeholder="Código da sessão" autocomplete="off" autocapitalize="characters" spellcheck="false">
         <button class="btn btn-outline" onclick="recoverSession()">Recuperar</button>
       </div>
       <div class="err-msg" id="recErr" role="alert"></div>
-    </div>
+    </details>
   </main>
 </div>
 
@@ -784,10 +824,12 @@
     <div class="hright"><span class="hbadge" id="lobbySessionBadge">Sessão</span></div>
   </header>
   <main class="container container-wide">
-    <div class="flow-hint">
-      <span><span class="step-n">1</span> Compartilhe o link ou o código de cada avião</span>
-      <span><span class="step-n">2</span> Aguarde as pessoas entrarem</span>
-      <span><span class="step-n">3</span> Inicie cada avião</span>
+    <div class="page-head">
+      <div>
+        <h1>Sala de espera</h1>
+        <p>Envie o link ou mostre o QR code de cada avião. Inicie quando houver pessoas suficientes.</p>
+      </div>
+      <button class="btn btn-outline" id="btnCopyAll" type="button" hidden onclick="copyAllLinks(this)">Copiar links de todos os aviões</button>
     </div>
     <div class="err-msg" id="facDiag" style="display:none" role="alert"></div>
     <div id="facLobbyPlanes" class="lobby-grid"></div>
@@ -813,18 +855,32 @@
   </header>
   <main class="container container-form">
     <form class="card" onsubmit="joinRoom(); return false;">
-      <h1 class="card-title" style="font-size:20px">Entrar na dinâmica</h1>
       <div id="parJoinRoomBadge"></div>
-      <div class="field">
+      <h1 class="card-title" style="font-size:24px;margin-bottom:8px">Entrar na dinâmica</h1>
+      <p class="join-lead">Você vai receber um papel e uma folha de símbolos. Converse com quem puder e descubram juntas qual símbolo aparece em todas as folhas.</p>
+      <div class="field plain">
         <label for="nameInp">Seu nome</label>
         <input type="text" id="nameInp" maxlength="30" placeholder="Nome ou apelido" autocomplete="given-name" enterkeyhint="go">
         <p class="field-hint" style="margin:8px 0 0">Seu papel será sorteado quando a pessoa facilitadora iniciar a dinâmica.</p>
       </div>
       <!-- código mantido oculto: preenchido via URL -->
       <input type="hidden" id="codeInp">
-      <button class="btn btn-primary btn-full" id="btnJoin" type="submit">Entrar</button>
+      <button class="btn btn-primary btn-lg btn-full" id="btnJoin" type="submit">Entrar</button>
       <div class="err-msg" id="joinErr" role="alert"></div>
     </form>
+  </main>
+</div>
+
+<!-- PAR OUT (sala indisponível) -->
+<div id="s-par-out" class="screen">
+  <header class="top-header">
+    <div class="brand"><span class="wordmark">crescimentum</span><span class="brand-sep"></span><span class="title">Dinâmica do Avião</span></div>
+  </header>
+  <main class="container container-form">
+    <div class="card out-card">
+      <h1 id="parOutTitle">Você saiu da sala</h1>
+      <p class="muted" id="parOutMsg">Peça um novo link à pessoa facilitadora.</p>
+    </div>
   </main>
 </div>
 
@@ -844,12 +900,16 @@
   <!-- LOBBY state -->
   <main id="pp-lobby" class="container container-form">
     <div class="card wait-card">
-      <span class="pulse" aria-hidden="true"></span>
-      <h1>Você está na sala</h1>
-      <p class="muted">A pessoa facilitadora vai iniciar a dinâmica em breve. Mantenha esta página aberta e escolha seu assento abaixo. Quem não escolher recebe um assento ao iniciar.</p>
-      <p class="count-line"><b id="parLobbyCount">1</b> de <span id="parLobbyMax">6</span> pessoas na sala</p>
+      <div class="wait-head">
+        <span class="pulse" aria-hidden="true"></span>
+        <div>
+          <h1>Você está na sala</h1>
+          <p class="count-line"><b id="parLobbyCount">1</b> de <span id="parLobbyMax">6</span> pessoas</p>
+        </div>
+      </div>
+      <p class="muted">Mantenha esta página aberta. A pessoa facilitadora vai iniciar a dinâmica em breve.</p>
       <ul class="chips" id="parLobbyList"></ul>
-      <div id="parLobbyRoleInfo" class="mt-12"></div>
+      <div id="parLobbyRoleInfo" class="seat-line"></div>
     </div>
     <div class="card" id="parSeatCard" style="padding:16px 12px">
       <h2 class="card-title" style="padding:0 8px">Escolha seu assento</h2>
@@ -894,7 +954,7 @@
             </div>
           </div>
           <div class="briefing" id="parBriefing" style="display:none">
-            <strong>Sua missão:</strong> você envia a resposta final do grupo. Converse com B1 e B2 e só envie quando todas as pessoas estiverem de acordo.
+            <strong>Sua missão:</strong> enviar a resposta final do grupo quando todas as pessoas estiverem de acordo.
           </div>
         </section>
 
@@ -949,6 +1009,19 @@
     </div>
   </main>
 </div>
+
+<dialog id="qrDialog" class="qr-dialog" aria-labelledby="qrTitle">
+  <div class="qr-dialog-body">
+    <h2 id="qrTitle">Avião 1</h2>
+    <p class="qr-sub">Aponte a câmera do celular para entrar.</p>
+    <div class="qr-img" id="qrImg"></div>
+    <p class="qr-link" id="qrLink"></p>
+    <div class="row-btns">
+      <button class="btn btn-outline" type="button" id="qrCopy">Copiar link</button>
+      <button class="btn btn-primary" type="button" onclick="closeQr()">Fechar</button>
+    </div>
+  </div>
+</dialog>
 
 <!-- ══════════════════════ SUPABASE (API REST) + JS ══════════════════════ -->
 <script>
@@ -1152,16 +1225,47 @@ function goFac() {
   } catch(e) {}
   showScreen('s-fac-setup');
 }
+function backHome() { showScreen('s-home'); refreshHome(); }
 async function recoverSession() {
   const code = document.getElementById('recCodeInp').value.trim().toUpperCase();
   if (!/^[A-Z0-9]{4}$/.test(code)) { showErr('recErr', 'O código tem 4 caracteres.'); return; }
   const r = await loadFacSession(code);
   if (r !== 'ok') showErr('recErr', r, 8000);
 }
-function goParWithCode() {
-  const code = document.getElementById('homeCodeInp').value.trim().toUpperCase();
-  if (!/^[A-Z0-9]{4}$/.test(code)) { showErr('homeCodeErr', 'O código tem 4 caracteres.'); return; }
-  showJoinFor(code);
+// Última sessão criada neste navegador: um toque para voltar ao monitor
+function lastSessionCode() { try { return localStorage.getItem('av_fac_session') || ''; } catch(e) { return ''; } }
+async function resumeLast() {
+  const code = lastSessionCode(); if (!code) return;
+  const r = await loadFacSession(code);
+  if (r !== 'ok') {
+    toast(r, 6000);
+    try { localStorage.removeItem('av_fac_session'); } catch(e) {}
+    refreshHome();
+  }
+}
+function refreshHome() {
+  const code = lastSessionCode();
+  const b = document.getElementById('btnResume');
+  b.hidden = !/^[A-Z0-9]{4}$/.test(code);
+  b.textContent = `Retomar sessão ${code}`;
+  renderHomeCabin();
+}
+// Mapa de exemplo na tela inicial: mostra a regra "A só conversa com B1 e B2"
+let homeCabinW = -1, homeCabinObs = null;
+function renderHomeCabin() {
+  const host = document.getElementById('homeCabin'); if (!host) return;
+  const w = host.clientWidth; if (!w) return;
+  homeCabinW = w;
+  const roles = ROLE_ORDER.slice(0, 8);
+  const people = roles.map(role => ({
+    id: role, name: ROLE_LABEL[role] || role, role, online: true,
+    state: role === 'A' ? 'self' : (role === 'B1' || role === 'B2') ? 'can-communicate' : 'no-contact',
+  }));
+  host.innerHTML = cabinViewportHtml(cabinHtml(8, people), w);
+  if (!homeCabinObs && typeof ResizeObserver !== 'undefined') {
+    homeCabinObs = new ResizeObserver(() => { if (host.clientWidth && host.clientWidth !== homeCabinW) renderHomeCabin(); });
+    homeCabinObs.observe(host);
+  }
 }
 function showJoinFor(code) {
   document.getElementById('codeInp').value = code;
@@ -1177,11 +1281,13 @@ function showJoinFor(code) {
 function parLink(code) { return `${location.origin}${location.pathname}?code=${code}`; }
 // ─────────────────────────────────────────── FAC SETUP (seleção por botões)
 
+let timerCustom = false;
+const TIMER_PRESETS = [10, 15, 20, 30];
 function initSetup() {
   const defs = {
     numPlanesSel: [1,2,3,4,5].map(n => [n, String(n)]),
     numPartSel:   [6,7,8,9,10,11].map(n => [n, String(n)]),
-    timerMinInp:  [[10,'10 min'],[15,'15 min'],[20,'20 min'],[30,'30 min'],[0,'Sem cronômetro']],
+    timerMinInp:  [...TIMER_PRESETS.map(n => [n, `${n} min`]), ['custom','Outro'], [0,'Sem cronômetro']],
   };
   document.querySelectorAll('.seg[data-for]').forEach(seg => {
     const id = seg.dataset.for;
@@ -1189,6 +1295,13 @@ function initSetup() {
       `<button type="button" role="radio" data-v="${v}" aria-checked="false">${l}</button>`).join('');
     seg.addEventListener('click', e => {
       const b = e.target.closest('button[data-v]'); if (!b) return;
+      if (id === 'timerMinInp') {
+        if (b.dataset.v === 'custom') {
+          timerCustom = true; syncSetup();
+          const i = document.getElementById('timerMinInp'); i.focus(); i.select(); return;
+        }
+        timerCustom = false;
+      }
       document.getElementById(id).value = b.dataset.v;
       syncSetup();
     });
@@ -1197,15 +1310,23 @@ function initSetup() {
   syncSetup();
 }
 function syncSetup() {
+  const tv = parseInt(document.getElementById('timerMinInp').value);
+  const isPreset = TIMER_PRESETS.includes(tv) || tv === 0;
+  const showCustom = timerCustom || !isPreset;
+  document.getElementById('timerCustomRow').hidden = !showCustom;
   document.querySelectorAll('.seg[data-for]').forEach(seg => {
     const v = String(document.getElementById(seg.dataset.for).value);
-    seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.v === v)));
+    const isTimer = seg.dataset.for === 'timerMinInp';
+    seg.querySelectorAll('button').forEach(b => {
+      const on = isTimer ? (showCustom ? b.dataset.v === 'custom' : b.dataset.v === v) : b.dataset.v === v;
+      b.setAttribute('aria-checked', String(on));
+    });
   });
   const np = parseInt(document.getElementById('numPlanesSel').value) || 1;
   const n  = parseInt(document.getElementById('numPartSel').value) || 6;
   const t  = Math.min(90, Math.max(0, parseInt(document.getElementById('timerMinInp').value) || 0));
   document.getElementById('setupSummary').textContent =
-    `${np} ${plural(np, 'avião', 'aviões')}, ${n} pessoas por avião` +
+    `${np} ${plural(np, 'avião', 'aviões')} com ${n} pessoas cada` +
     (np > 1 ? ` (${np * n} pessoas no total)` : '') + '. ' +
     (t > 0 ? `Duração de ${t} minutos.` : 'Sem cronômetro.');
 }
@@ -1524,13 +1645,22 @@ function qrSvgCached(text, px, label) {
   const k = text + '|' + px;
   return qrCache[k] || (qrCache[k] = qrSvg(text, px, label));
 }
-let qrOpen = {};          // código da sala → painel do QR aberto (sobrevive às atualizações da lista)
-function toggleQr(code) {
-  qrOpen[code] = !qrOpen[code];
-  renderLobbyPlanes();
-  if (qrOpen[code]) {
-    const b = document.querySelector(`[data-qr-btn="${code}"]`); if (b) b.focus({ preventScroll: true });
-  }
+// Diálogo com o QR code grande, para projetar na sala
+function openQr(code) {
+  const i = planeList.findIndex(p => p.code === code); if (i < 0) return;
+  const dlg = document.getElementById('qrDialog');
+  const link = parLink(code);
+  document.getElementById('qrTitle').textContent = `Avião ${i + 1}`;
+  document.getElementById('qrImg').innerHTML = qrSvgCached(link, 340, `QR code para entrar no Avião ${i + 1}`);
+  document.getElementById('qrLink').textContent = link;
+  document.getElementById('qrCopy').onclick = e => copyText(link, e.currentTarget);
+  if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+}
+function closeQr() { const d = document.getElementById('qrDialog'); if (d.open) d.close(); }
+
+// Todos os links de uma vez (um por linha), para colar numa mensagem
+function copyAllLinks(btnEl) {
+  copyText(planeList.map((p, i) => `Avião ${i + 1}: ${parLink(p.code)}`).join('\n'), btnEl);
 }
 
 // ─────────────────────────────────────────── LOBBY RENDER
@@ -1543,7 +1673,6 @@ function copyText(text, btnEl) {
   }).catch(() => toast('Copie manualmente: ' + text, 5000));
 }
 function copyLink(code, btnEl) { copyText(parLink(code), btnEl); }
-function copyCode(code, btnEl) { copyText(code, btnEl); }
 
 // Ordem de exibição: papéis na sequência A, B1, B2, C…; quem ainda não tem papel ou assento vai depois, por ordem de entrada
 function roleRank(r) { const i = ROLE_ORDER.indexOf(r); return i < 0 ? 99 : i; }
@@ -1567,16 +1696,12 @@ function lobbyRowHtml(p, i) {
   const c = esc(p.code);
   return `<article class="card plane-card">
     <div class="plane-head"><h3>Avião ${i+1}</h3><span class="chip chip-info">Aguardando início</span></div>
-    <div class="code-big plane-code-disp" aria-label="Código da sala: ${esc(p.code.split('').join(' '))}">${c}</div>
+    <p class="plane-sub">Sala <b>${c}</b></p>
+    <span class="link-box" title="Link de entrada">${esc(parLink(p.code))}</span>
     <div class="plane-actions">
       <button class="btn btn-outline btn-sm" onclick="copyLink('${c}',this)">Copiar link</button>
-      <button class="btn btn-outline btn-sm" onclick="copyCode('${c}',this)">Copiar código</button>
-      <button class="btn btn-outline btn-sm" data-qr-btn="${c}" aria-expanded="${!!qrOpen[p.code]}" onclick="toggleQr('${c}')">${qrOpen[p.code] ? 'Ocultar QR code' : 'QR code'}</button>
+      <button class="btn btn-outline btn-sm" onclick="openQr('${c}')" aria-haspopup="dialog">Mostrar QR code</button>
     </div>
-    ${qrOpen[p.code] ? `<div class="qr-panel">
-      <div class="qr-img">${qrSvgCached(parLink(p.code), 168, 'QR code para entrar no Avião ' + (i+1))}</div>
-      <p>Aponte a câmera do celular para entrar direto no <b>Avião ${i+1}</b>.</p>
-    </div>` : ''}
     <div class="progress">
       <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${count}" aria-label="Pessoas na sala">
         <span style="width:${pct}%"></span><i style="left:calc(${minPct}% - 1px)" title="Mínimo para iniciar"></i>
@@ -1585,13 +1710,14 @@ function lobbyRowHtml(p, i) {
     </div>
     ${sorted.length
       ? `<ul class="chips">${sorted.map(x => `<li><span class="dot-online"></span>${esc(x.name)}${x.seat ? `<span class="chip-seat">${esc(x.seat)}</span>` : ''}</li>`).join('')}</ul>`
-      : `<ul class="chips"><li class="empty" style="background:none;border:none;padding:0;font-weight:400;color:var(--muted)">Aguardando pessoas entrarem...</li></ul>`}
+      : `<ul class="chips"><li class="empty" style="background:none;border:none;padding:0;font-weight:400;color:var(--muted)">Ninguém entrou ainda.</li></ul>`}
     <button class="btn btn-primary btn-full" ${ready ? '' : 'disabled'} onclick="startPlane('${c}')">Iniciar Avião ${i+1}</button>
     <p class="hint">${hint}</p>
   </article>`;
 }
 
 function renderLobbyPlanes() {
+  document.getElementById('btnCopyAll').hidden = planeList.length < 2;
   document.getElementById('facLobbyPlanes').innerHTML =
     planeList.map((p, i) => lobbyRowHtml(p, i)).join('');
 }
@@ -1658,7 +1784,7 @@ function renderActivePlane() {
 
     const waiting = planeList.map((p, i) => ({p, i})).filter(x => phases[x.i] === 'lobby');
     const waitHtml = waiting.length
-      ? `<h2 class="card-title" style="margin:4px 0 10px">Aguardando início</h2><div class="lobby-grid" style="margin-bottom:22px">${waiting.map(x => lobbyRowHtml(x.p, x.i)).join('')}</div>`
+      ? `<h2 class="section-title">Aguardando início</h2><div class="lobby-grid" style="margin-bottom:22px">${waiting.map(x => lobbyRowHtml(x.p, x.i)).join('')}</div>`
       : '';
 
     const started = planeList.map((p, i) => {
@@ -1676,7 +1802,7 @@ function renderActivePlane() {
       </button>`;
     }).join('');
 
-    content.innerHTML = stats + waitHtml + (started ? `<div class="overview-grid">${started}</div>` : '');
+    content.innerHTML = stats + (started ? `<h2 class="section-title">Aviões iniciados</h2><div class="overview-grid" style="margin-bottom:22px">${started}</div>` : '') + waitHtml;
     return;
   }
 
@@ -2006,7 +2132,6 @@ function openAnswerPanel() {
     <button type="button" class="sym-card pickable" role="radio" aria-checked="false" id="as-${s.id}"
             aria-label="${esc(s.name)}" onclick="pickAns('${s.id}',this)">
       <span aria-hidden="true">${esc(s.ch)}</span>
-      <span class="sym-card-label">${esc(s.name)}</span>
     </button>`).join('');
   document.getElementById('answerInfo').textContent = '';
   document.getElementById('btnConfirm').disabled = true;
@@ -2027,7 +2152,7 @@ function pickAns(id, el) {
   el.classList.add('picked'); el.setAttribute('aria-checked', 'true');
   selectedAns = id;
   const s = SYM[id];
-  document.getElementById('answerInfo').textContent = `Selecionado: ${s?.ch||'?'} (${s?.name||id})`;
+  document.getElementById('answerInfo').textContent = `Selecionado: ${s?.ch||'?'}`;
   document.getElementById('btnConfirm').disabled = false;
 }
 async function confirmAnswer() {
@@ -2097,13 +2222,15 @@ async function rejoinSilently() {
     myUid = r.pid; if (r.role) myPRole = r.role;
   } catch(e) {
     toast(JOIN_ERR[e.code] || connErr(e), 5000);
-    if (JOIN_ERR[e.code]) leaveToHome();
+    if (JOIN_ERR[e.code]) leaveToHome('Não foi possível continuar', JOIN_ERR[e.code]);
   }
 }
-function leaveToHome() {
+function leaveToHome(title, msg) {
   clearTimeout(parPollTimer); clearAv();
   roomCode = null; myPRole = null; myUid = null; mySeat = null; lastState = {}; lastParts = {};
-  showScreen('s-home');
+  document.getElementById('parOutTitle').textContent = title || 'Você saiu da sala';
+  document.getElementById('parOutMsg').textContent   = msg   || 'Peça um novo link à pessoa facilitadora.';
+  showScreen('s-par-out');
 }
 
 function applyPar(r) {
@@ -2157,7 +2284,7 @@ function handlePar(state, parts) {
     document.getElementById('parLobbyMax').textContent   = cfgNumPart;
     document.getElementById('parLobbyList').innerHTML    =
       people.map(x => `<li><span class="dot-online"></span>${esc(x.name || '?')}${x.seat ? `<span class="chip-seat">${esc(x.seat)}</span>` : ''}</li>`).join('');
-    document.getElementById('parLobbyRoleInfo').innerHTML = mySeat ? `Seu assento: ${roleBadge(mySeat)}` : '';
+    document.getElementById('parLobbyRoleInfo').innerHTML = mySeat ? `Seu assento: ${roleBadge(mySeat)}` : 'Seu assento: será sorteado ao iniciar.';
     renderSeatPicker(parts);
     return;
   }
@@ -2225,21 +2352,18 @@ function handlePar(state, parts) {
         <p class="muted">Aguarde a pessoa facilitadora liberar o resultado.</p></div>`;
     } else if (state.answer) {
       const sym = SYM[state.answer];
-      html = `<div class="result-glyph" aria-hidden="true">${esc(sym?.ch||'?')}</div>
-        <div class="result-name">${esc(sym?.name||'')}</div>
+      html = `<div class="result-glyph" role="img" aria-label="${esc(sym?.name||'')}">${esc(sym?.ch||'?')}</div>
         <div class="${state.correct?'result-ok':'result-err'}">
           ${state.correct ? 'O grupo acertou! Resposta correta.' : 'O grupo errou.'}
         </div>`;
       if (!state.correct) {
         html += `<p class="result-label">O símbolo correto era:</p>
-          <div class="result-glyph" aria-hidden="true">${esc(correctSym?.ch||'?')}</div>
-          <div class="result-name">${esc(correctSym?.name||'')}</div>`;
+          <div class="result-glyph" role="img" aria-label="${esc(correctSym?.name||'')}">${esc(correctSym?.ch||'?')}</div>`;
       }
     } else {
       html = `<p class="muted">A dinâmica foi encerrada sem resposta.</p>
         <p class="result-label">O símbolo que estava em todas as folhas era:</p>
-        <div class="result-glyph" aria-hidden="true">${esc(correctSym?.ch||'?')}</div>
-        <div class="result-name">${esc(correctSym?.name||'')}</div>`;
+        <div class="result-glyph" role="img" aria-label="${esc(correctSym?.name||'')}">${esc(correctSym?.ch||'?')}</div>`;
     }
     document.getElementById('parResultCard').style.display = 'block';
     document.getElementById('parResultContent').innerHTML  = html;
@@ -2685,6 +2809,7 @@ function clearAv() {
 
 window.addEventListener('DOMContentLoaded', () => {
   initSetup();
+  refreshHome();
 
   const urlCode = new URLSearchParams(location.search).get('code');
   const sCode   = sessionStorage.getItem('av_session');
