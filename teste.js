@@ -18,7 +18,7 @@
   document.title = '[TESTE] ' + document.title;
 
   // ───────────────────────── banco simulado
-  function fresh() { return { skew: 0, sessions: {}, planes: {}, parts: {}, msgs: [], mid: 0, pend: [], pidn: 0, auto: true }; }
+  function fresh() { return { skew: 0, sessions: {}, planes: {}, parts: {}, msgs: [], mid: 0, pend: [], pidn: 0, auto: true, trickle: false, autostart: false, tr: {} }; }
   function load() { try { var d = JSON.parse(localStorage.getItem(KEY)); if (d && d.sessions) return d; } catch (e) {} return fresh(); }
   function save(d) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
   function now(d) { return Date.now() + d.skew; }
@@ -73,6 +73,28 @@
     });
     p.phase = 'playing'; p.revealed = false; p.answer = null; p.correct = null; p.by = null;
     p.timer_end = p.timer > 0 ? now(d) + p.timer * 60000 : null;
+  }
+
+  // salas em espera: pessoas simuladas chegam aos poucos, escolhem assento e (opcional) a facilitação inicia sozinha
+  function drift(d) {
+    var t = now(d), real = Date.now();
+    d.tr = d.tr || {};
+    Object.keys(d.planes).forEach(function (pc) {
+      var p = d.planes[pc]; if (p.phase !== 'lobby') return;
+      var ps = partsOf(d, pc), humans = ps.filter(function (x) { return !x.bot; }).length, st = d.tr[pc] || (d.tr[pc] = { at: real, full: 0 });
+      if (d.trickle && real - st.at >= 4500 && ps.length < p.num - (humans ? 0 : 1)) {
+        var used = ps.map(function (x) { return x.name; });
+        var nm = NAMES.filter(function (n) { return used.indexOf(n) < 0; })[0] || ('Pessoa ' + (d.pidn + 1));
+        d.pidn++; var id = 'pid-b' + d.pidn;
+        var seats = ALL.slice(0, p.num).filter(function (r) { return !ps.some(function (y) { return y.seat === r; }); });
+        d.parts[id] = { id: id, plane: pc, tok: botToken(), name: nm, role: null, seat: (rnd(2) && seats.length > 1) ? seats[rnd(seats.length)] : null, symbols: null, connected: t, last_seen: t, bot: true };
+        st.at = real;
+      }
+      if (d.autostart && partsOf(d, pc).length >= p.num) {
+        if (!st.full) st.full = real;
+        else if (real - st.full >= 4000) { startCore(d, p); st.full = 0; }
+      } else st.full = 0;
+    });
   }
 
   var api = {
@@ -193,7 +215,7 @@
     try { args = JSON.parse((opts && opts.body) || '{}'); } catch (e) {}
     var d = load(), out;
     try {
-      flush(d);
+      flush(d); drift(d);
       out = api[fn] ? api[fn](d, args) : { error: 'unknown_fn' };
       save(d);
     } catch (e) { return Promise.resolve(new Response(JSON.stringify({ code: 'P0001', message: String(e) }), { status: 400, headers: { 'content-type': 'application/json' } })); }
@@ -214,6 +236,27 @@
     ['wrongRev', 'Resultado revelado: errou'],
     ['noAnsRev', 'Encerrado sem resposta, revelado'],
   ];
+  var JOINS = [
+    ['open', 'Sala com vagas (metade já dentro)'],
+    ['last', 'Falta só eu para completar'],
+    ['first', 'Sala vazia, sou a primeira pessoa'],
+    ['full', 'Sala cheia (mostra o erro)'],
+    ['started', 'Dinâmica já começou (mostra o erro)'],
+    ['ended', 'Dinâmica já terminou (mostra o erro)'],
+    ['bad', 'Código inexistente (mostra o erro)'],
+  ];
+  function openJoin(kind, people, minutes) {
+    var o = { planes: 1, people: people, minutes: minutes, state: 'lobbyfree', bots: Math.floor(people / 2) };
+    if (kind === 'last') o.bots = people - 1;
+    else if (kind === 'first') o.bots = 0;
+    else if (kind === 'full') o.bots = people;
+    else if (kind === 'started') o.state = 'play';
+    else if (kind === 'ended') o.state = 'rightRev';
+    build(o);
+    var code = kind === 'bad' ? 'ZZZZ' : build.last;
+    ['av_session', 'av_room', 'av_role', 'av_name', 'av_par_token'].forEach(function (k) { sessionStorage.removeItem(k); });
+    var u = new URL(location.href); u.searchParams.set('code', code); location.href = u.toString();
+  }
   function wrongSym(p) { return SYMS.filter(function (s) { return s !== p.key; })[rnd(5)]; }
   function sampleChat(d, p) {
     var t0 = now(d), roles = partsOf(d, p.code).map(function (x) { return x.role; }), n = 0;
@@ -227,12 +270,13 @@
     say('E', 'B1'); say('F', 'B2');
   }
   function build(o) {
-    var d = fresh(), ft = window.facToken(), sc = mkCode({});
+    var old = load(), d = fresh(), ft = window.facToken(), sc = mkCode({});
+    d.auto = old.auto !== false; d.trickle = !!old.trickle; d.autostart = !!old.autostart;
     d.sessions[sc] = { tok: ft, created: now(d) };
     for (var i = 0; i < o.planes; i++) {
       var pc = mkCode(d.planes);
       var p = d.planes[pc] = { code: pc, session: sc, idx: i, version: i % 5 + 1, key: SYMS[rnd(6)], num: o.people, timer: o.minutes, phase: 'lobby', timer_end: null, revealed: false, answer: null, correct: null, by: null };
-      var n = o.state === 'lobby0' ? 0 : o.state === 'lobbyfree' ? o.people - 1 : o.people;
+      var n = o.bots != null ? o.bots : o.state === 'lobby0' ? 0 : o.state === 'lobbyfree' ? o.people - 1 : o.people;
       for (var k = 0; k < n; k++) {
         d.pidn++; var id = 'pid-b' + d.pidn;
         d.parts[id] = { id: id, plane: pc, tok: botToken(), name: NAMES[k % NAMES.length], role: null, seat: null, symbols: null, connected: now(d) - (n - k) * 4000, last_seen: now(d), bot: true };
@@ -249,7 +293,7 @@
         if (/Rev$/.test(o.state)) p.revealed = true;
       }
     }
-    save(d); return sc;
+    save(d); build.last = Object.keys(d.planes).filter(function (k) { return d.planes[k].idx === 0; })[0]; return sc;
   }
   function setView(kind, sc, pc, tok, name) {
     ['av_session', 'av_room', 'av_role', 'av_name', 'av_par_token'].forEach(function (k) { sessionStorage.removeItem(k); });
@@ -283,6 +327,15 @@
     return list.indexOf(cur) >= 0 ? cur : list[list.length - 1] || null;
   }
 
+  function whoAmI(d) {
+    var r = sessionStorage.getItem('av_role');
+    if (r === 'fac') return 'Vendo como: facilitação';
+    if (r === 'par') {
+      var tok = sessionStorage.getItem('av_par_token'), pc = sessionStorage.getItem('av_room'), x = tok && pc ? me(d, pc, tok) : null;
+      return 'Vendo como: ' + (sessionStorage.getItem('av_name') || 'participante') + (x && x.role ? ' · Pessoa ' + x.role : x && x.seat ? ' · assento ' + x.seat : ' · participante');
+    }
+    return new URLSearchParams(location.search).get('code') ? 'Vendo como: pessoa nova (ainda não entrou)' : 'Vendo como: ninguém ainda';
+  }
   function init() {
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
     var btn = el('<button class="tm-btn" type="button" aria-expanded="false" aria-controls="tmPanel">Modo teste</button>');
@@ -295,6 +348,13 @@
       var keepPlane = (panel.querySelector('#tmPlane') || {}).value, keepWho = (panel.querySelector('#tmWho') || {}).value;
       var h = '<button class="tm-x" type="button" aria-label="Fechar" id="tmClose">×</button><h2>Modo teste</h2>' +
         '<p>Dados simulados neste navegador. Nada é enviado ao Supabase.</p>' +
+        '<p id="tmWho2" style="font-weight:700;color:#210000">' + esc(whoAmI(d)) + '</p>' +
+        '<h3>Jornada do participante</h3>' +
+        '<p>Abre esta aba como uma pessoa nova que recebeu o link do avião.</p>' +
+        '<label for="tmJoin">Situação</label><select id="tmJoin">' + JOINS.map(function (j) { return '<option value="' + j[0] + '">' + j[1] + '</option>'; }).join('') + '</select>' +
+        '<div style="margin-top:8px"><button class="tm-b p" style="width:100%" id="tmJoinGo" type="button">Entrar como pessoa nova</button></div>' +
+        '<label class="tm-chk"><input type="checkbox" id="tmTrickle"' + (d.trickle ? ' checked' : '') + '> Pessoas simuladas chegam aos poucos na sala</label>' +
+        '<label class="tm-chk"><input type="checkbox" id="tmAutoStart"' + (d.autostart ? ' checked' : '') + '> Facilitação inicia sozinha quando a sala completa</label>' +
         '<h3>Montar cenário</h3>' +
         '<div class="tm-row"><div><label for="tmPl">Aviões</label><select id="tmPl"><option>1</option><option>2</option><option>3</option></select></div>' +
         '<div><label for="tmPe">Pessoas por avião</label><select id="tmPe">' + [6, 7, 8, 9, 10, 11].map(function (n) { return '<option' + (n === 8 ? ' selected' : '') + '>' + n + '</option>'; }).join('') + '</select></div>' +
@@ -324,6 +384,9 @@
         var sc2 = build({ planes: +q('#tmPl').value, people: +q('#tmPe').value, minutes: Math.max(0, Math.min(90, +q('#tmMin').value || 0)), state: q('#tmState').value });
         setView('fac', sc2);
       };
+      q('#tmJoinGo').onclick = function () { openJoin(q('#tmJoin').value, +q('#tmPe').value, Math.max(0, Math.min(90, +q('#tmMin').value || 0))); };
+      q('#tmTrickle').onchange = function (e) { var dd = load(); dd.trickle = e.target.checked; save(dd); };
+      q('#tmAutoStart').onchange = function (e) { var dd = load(); dd.autostart = e.target.checked; save(dd); };
       q('#tmReset').onclick = function () { localStorage.removeItem(KEY); ['av_session', 'av_room', 'av_role', 'av_name', 'av_par_token'].forEach(function (k) { sessionStorage.removeItem(k); }); try { localStorage.removeItem('av_fac_session'); } catch (e) {} var u = new URL(location.href); u.searchParams.delete('code'); location.href = u.toString(); };
       q('#tmExit').onclick = function () { var u = new URL(location.href); u.searchParams.delete('teste'); u.searchParams.delete('code'); location.href = u.toString(); };
       if (!sc) return;
@@ -383,6 +446,7 @@
       save(d); say(msg);
     }
 
+    setInterval(function () { var e = panel.querySelector('#tmWho2'); if (e && !panel.hidden) e.textContent = whoAmI(load()); }, 1500);
     // abre já com o painel visível na primeira vez
     try { if (!sessionStorage.getItem('av_teste_seen')) { sessionStorage.setItem('av_teste_seen', '1'); btn.click(); } } catch (e) {}
   }
