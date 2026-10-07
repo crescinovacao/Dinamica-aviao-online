@@ -571,6 +571,13 @@
     .cb-offline .cb-presence { background: var(--cabin-border-default); }
     /* escolha de assento (sala de espera) */
     .cb-pick { cursor: pointer; }
+    /* Avião na tela da facilitação (somente leitura; no monitor, tocar num assento filtra as mensagens da pessoa) */
+    .fac-cabin { margin: 14px 0 4px; }
+    .fac-cabin-note { font-size: 13px; color: var(--muted); text-align: center; margin: 8px 0 0; }
+    .fac-cabin.is-clickable .cb-seat { cursor: pointer; }
+    .fac-cabin.is-clickable .cb-seat:hover .cb-chair { box-shadow: 0 0 0 3px color-mix(in srgb, var(--cabin-accent) 35%, transparent); }
+    .fac-cabin.is-clickable .cb-seat:focus-visible { outline: none; }
+    .fac-cabin.is-clickable .cb-seat:focus-visible .cb-chair { box-shadow: 0 0 0 3px color-mix(in srgb, var(--cabin-accent) 55%, transparent); }
     .cb-pick:focus-visible { outline: none; }
     .cb-pick:hover .cb-chair, .cb-pick:focus-visible .cb-chair { box-shadow: 0 0 0 3px color-mix(in srgb, var(--cabin-accent) 35%, transparent); }
     .cb-free .cb-chair { color: var(--cabin-accent-text); border: 1.4px dashed var(--cabin-accent); background: var(--cabin-surface-card); }
@@ -664,7 +671,7 @@
     /* ═══════════════════════════
        LOBBY E VISÃO GERAL (facilitação)
     ═══════════════════════════ */
-    .lobby-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 16px; align-items: start; }
+    .lobby-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); gap: 16px; align-items: start; }
     .plane-card { margin-bottom: 0; }
     .plane-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .plane-head h3 { font-size: 18px; color: var(--navy); }
@@ -733,7 +740,7 @@
       .container { padding: 28px 24px 56px; }
     }
     @media (min-width: 1024px) {
-      .mon-grid { grid-template-columns: 360px minmax(0, 1fr); gap: 0 18px; align-items: start; }
+      .mon-grid { grid-template-columns: 440px minmax(0, 1fr); gap: 0 18px; align-items: start; }
       .mon-side { position: sticky; top: 72px; }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -1757,6 +1764,7 @@ function lobbyRowHtml(p, i) {
       </div>
       <p><b>${count} de ${max} pessoas</b> na sala (mínimo ${MIN_PLAYERS})</p>
     </div>
+    <div class="fac-cabin" data-code="${c}" data-kind="lobby"></div>
     ${sorted.length
       ? `<ul class="chips">${sorted.map(x => `<li><span class="dot-online"></span>${esc(x.name)}${x.seat ? `<span class="chip-seat">${esc(x.seat)}</span>` : ''}</li>`).join('')}</ul>`
       : `<ul class="chips"><li class="empty" style="background:none;border:none;padding:0;font-weight:400;color:var(--muted)">Ninguém entrou ainda.</li></ul>`}
@@ -1769,6 +1777,7 @@ function renderLobbyPlanes() {
   document.getElementById('btnCopyAll').hidden = planeList.length < 2;
   document.getElementById('facLobbyPlanes').innerHTML =
     planeList.map((p, i) => lobbyRowHtml(p, i)).join('');
+  paintFacCabins();
 }
 
 // ─────────────────────────────────────────── START PLANE
@@ -1852,6 +1861,7 @@ function renderActivePlane() {
     }).join('');
 
     content.innerHTML = stats + (started ? `<h2 class="section-title">Aviões iniciados</h2><div class="overview-grid" style="margin-bottom:22px">${started}</div>` : '') + waitHtml;
+    paintFacCabins();
     return;
   }
 
@@ -1863,7 +1873,7 @@ function renderActivePlane() {
   if (!p) { content.innerHTML = ''; return; }
   const idx   = planeList.indexOf(p);
   const phase = state.phase || 'lobby';
-  if (phase === 'lobby') { content.innerHTML = `<div class="lobby-grid">${lobbyRowHtml(p, idx)}</div>`; return; }
+  if (phase === 'lobby') { content.innerHTML = `<div class="lobby-grid">${lobbyRowHtml(p, idx)}</div>`; paintFacCabins(); return; }
   const code   = esc(activePlane);
   const parArr = Object.entries(parts).sort(([,a],[,b]) => bySeatThenEntry(a, b));
 
@@ -1958,12 +1968,24 @@ function renderActivePlane() {
     </div>
   </section>`;
 
+  const cabinCard = `<section class="card" style="padding:16px 12px">
+    <h2 class="card-title" style="padding:0 8px">Cabine</h2>
+    <div class="fac-cabin is-clickable" data-code="${code}" data-kind="game"></div>
+    <p class="fac-cabin-note">Toque em um assento para ver só as mensagens dessa pessoa.</p>
+    <ul class="cabin-legend" aria-label="Legenda da cabine">
+      <li class="cabin-legend-item"><span class="lg lg-self" aria-hidden="true"></span>Pessoa selecionada</li>
+      <li class="cabin-legend-item"><span class="lg lg-can" aria-hidden="true"></span>Pode falar com ela</li>
+      <li class="cabin-legend-item"><span class="lg-presence" aria-hidden="true"></span>Online</li>
+      <li class="cabin-legend-item"><span class="lg lg-none lg-off" aria-hidden="true"></span>Offline</li>
+    </ul>
+  </section>`;
   content.innerHTML = `<div class="mon-grid">
-    <aside class="mon-side">${statusCard}${peopleCard}</aside>
+    <aside class="mon-side">${statusCard}${cabinCard}${peopleCard}</aside>
     <div class="mon-main">${resultCard}${msgCard}</div>
   </div>`;
 
   facClockTick();
+  paintFacCabins();
 
   // Reexibe as mensagens já recebidas
   const mon = document.getElementById(`fac-mon-${activePlane}`);
@@ -2002,6 +2024,7 @@ const facFilterVal = {};
 function applyFacFilter() {
   const f = document.getElementById('facMonFilter'); if (!f) return;
   facFilterVal[activePlane] = f.value;
+  paintFacCabins();
   const feed = document.getElementById(`fac-mon-${activePlane}`); if (!feed) return;
   let shown = 0;
   feed.querySelectorAll('.mon-row').forEach(r => {
@@ -2009,6 +2032,8 @@ function applyFacFilter() {
     r.hidden = !ok; if (ok) shown++;
   });
   let e = feed.querySelector('.mon-filter-empty');
+  const gen = feed.querySelector('.chat-empty:not(.mon-filter-empty)');
+  if (gen) gen.hidden = f.value !== 'all';
   if (f.value !== 'all' && shown === 0) {
     if (!e) { e = document.createElement('div'); e.className = 'chat-empty mon-filter-empty'; feed.appendChild(e); }
     e.textContent = 'Nenhuma mensagem com essa pessoa ainda.';
@@ -2612,6 +2637,82 @@ function toCabinParticipants(parts, myRole, reachable, roles) {
       online: !!p.name && p.online !== false,
     };
   });
+}
+
+// ── Avião na tela da facilitação (somente leitura) ──
+// Sala de espera: assentos já escolhidos e livres. Monitor: quem ocupa cada papel, online ou offline;
+// a pessoa filtrada fica em destaque e quem pode falar com ela aparece tracejado.
+function facCabinPeople(code, kind) {
+  const plane = planeList.find(p => p.code === code); if (!plane) return null;
+  const parts = Object.values((planeCache[code] || {}).parts || {}).filter(Boolean);
+  if (kind === 'lobby') {
+    const count = plane.numParticipants;
+    if (!CABIN_SPEC.rowCenters[count]) return null;
+    const bySeat = {}; parts.forEach(p => { if (p.seat) bySeat[p.seat] = p; });
+    const noSeat = parts.filter(p => !p.seat).length;
+    return { count, noSeat, people: cabinRoles(count).map(role => {
+      const o = bySeat[role];
+      return { id: o ? `s-${role}` : `vaga-${role}`, name: o ? (o.name || '') : '', role,
+               state: 'no-contact', online: !o || o.online !== false, free: !o };
+    }) };
+  }
+  const byRole = {}; parts.forEach(p => { if (p.role) byRole[p.role] = p; });
+  const n = Object.keys(byRole).length;
+  if (!CABIN_SPEC.rowCenters[n]) return null;
+  const roles = cabinRoles(n);
+  if (!roles.every(r => byRole[r])) return null;
+  const sel = facFilterVal[code] && facFilterVal[code] !== 'all' ? facFilterVal[code] : null;
+  const reach = sel ? getTargets(sel, roles) : [];
+  return { count: n, people: roles.map(role => {
+    const o = byRole[role];
+    return { id: `r-${role}`, name: o.name || '', role,
+             state: role === sel ? 'self' : reach.includes(role) ? 'can-communicate' : 'no-contact',
+             online: !!o.name && o.online !== false };
+  }) };
+}
+
+function paintFacCabins() {
+  document.querySelectorAll('.fac-cabin').forEach(host => {
+    const d = facCabinPeople(host.dataset.code, host.dataset.kind);
+    if (!d) { host.innerHTML = ''; return; }
+    const w = host.clientWidth || 0;
+    host.dataset.w = w;
+    host.innerHTML = cabinViewportHtml(cabinHtml(d.count, d.people), w) +
+      (host.dataset.kind === 'lobby' && d.noSeat
+        ? `<p class="fac-cabin-note">${d.noSeat} ${plural(d.noSeat, 'pessoa ainda sem assento recebe', 'pessoas ainda sem assento recebem')} um papel ao iniciar.</p>` : '');
+    if (host.classList.contains('is-clickable')) {
+      host.querySelectorAll('.cb-seat').forEach(el => {
+        el.tabIndex = 0; el.setAttribute('role', 'button');
+        const role = el.dataset.role;
+        el.setAttribute('aria-pressed', String(facFilterVal[host.dataset.code] === role));
+        el.setAttribute('aria-label', (el.getAttribute('aria-label') || '') + ' Ver mensagens dessa pessoa.');
+      });
+    }
+  });
+}
+let facCabinResizeRaf = 0;
+window.addEventListener('resize', () => {
+  cancelAnimationFrame(facCabinResizeRaf);
+  facCabinResizeRaf = requestAnimationFrame(() => {
+    const hosts = document.querySelectorAll('.fac-cabin');
+    if (Array.from(hosts).some(h => (h.clientWidth || 0) !== Number(h.dataset.w))) paintFacCabins();
+  });
+});
+document.addEventListener('click', e => {
+  const seat = e.target.closest('.fac-cabin.is-clickable .cb-seat'); if (!seat) return;
+  facPickSeat(seat);
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const seat = e.target.closest && e.target.closest('.fac-cabin.is-clickable .cb-seat'); if (!seat) return;
+  e.preventDefault(); facPickSeat(seat);
+});
+function facPickSeat(seat) {
+  const f = document.getElementById('facMonFilter'); if (!f) return;
+  const role = seat.dataset.role;
+  f.value = f.value === role ? 'all' : role;
+  if (f.value !== role && f.value !== 'all') f.value = 'all';
+  applyFacFilter();
 }
 
 // Avião visto de cima: vetor exato do frame "aviao 1" do Figma (patch cabine-site-final), inline para manter o site em um arquivo só
