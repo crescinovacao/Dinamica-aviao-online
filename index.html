@@ -288,34 +288,72 @@
     }
     .chat-empty { margin: auto; text-align: center; color: var(--muted); font-size: 14px; max-width: 260px; }
     .bubble {
-      max-width: 82%; padding: 9px 13px; border-radius: 14px;
+      max-width: min(88%, 460px); padding: 9px 12px 10px; border-radius: 14px;
       font-size: 15px; line-height: 1.45; overflow-wrap: anywhere;
     }
     .bubble-out { align-self: flex-end; background: var(--blue-strong); color: #fff; border-bottom-right-radius: 4px; }
     .bubble-in  { align-self: flex-start; background: #fff; border: 1px solid var(--border); border-bottom-left-radius: 4px; }
-    .bubble-meta { font-size: 12px; opacity: .8; margin-bottom: 3px; font-weight: 700; }
+    .bubble-head { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; min-width: 0; font-size: 13px; }
+    .bubble-av {
+      width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex: none;
+      font: 800 11px/1 'Raleway', sans-serif;
+    }
+    .bubble-dir { opacity: .85; font-weight: 600; flex: none; }
+    .bubble-who { font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bubble-role { flex: none; padding: 1px 7px; border-radius: 6px; font: 800 11px/1.5 'Raleway', sans-serif; white-space: nowrap; }
+    .bubble-out .bubble-role { background: rgb(255 255 255 / 22%); color: #fff; }
+    .bubble-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
+    .bubble-time { margin-left: auto; flex: none; font-size: 11.5px; opacity: .7; font-variant-numeric: tabular-nums; }
+    .bubble-reply {
+      margin-top: 2px; padding: 5px 10px; min-height: 32px; border: 1.5px solid var(--border-strong); border-radius: 8px;
+      background: #fff; color: var(--blue-strong); font: 700 13px 'Aptos','Segoe UI',system-ui,sans-serif; cursor: pointer;
+    }
+    .bubble-reply:hover { border-color: var(--blue); background: var(--blue-tint); }
+    .is-ended .bubble-reply { display: none; }
+    .chat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .chat-head .card-title { margin: 0; }
+    .chat-filter {
+      min-height: 38px; max-width: 100%; padding: 6px 30px 6px 10px; border: 1.5px solid var(--border-strong); border-radius: 10px;
+      background: #fff; color: var(--ink); font: 600 13px 'Aptos','Segoe UI',system-ui,sans-serif;
+    }
+    .chat-filter-empty { margin: auto; text-align: center; color: var(--muted); font-size: 14px; max-width: 260px; }
     .chat-compose { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-    .to-row { display: flex; align-items: center; gap: 10px; }
-    .to-label { font-size: 13px; font-weight: 700; color: var(--muted); flex-shrink: 0; }
-    .to-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .to-label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 800; color: var(--navy); }
+    .to-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
     .to-chip {
-      position: relative; min-height: 44px; min-width: 62px; padding: 5px 12px; border-radius: 10px;
-      border: 1.5px solid var(--border-strong); background: #fff; color: var(--ink); cursor: pointer;
-      font-family: 'Raleway', sans-serif; font-weight: 800; font-size: 14px; line-height: 1.15;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      transition: background .2s ease, border-color .2s ease;
+      position: relative; display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 54px; padding: 7px 12px 7px 9px;
+      border-radius: 12px; border: 1.5px solid var(--border-strong); background: #fff; color: var(--ink); cursor: pointer; text-align: left;
+      font-family: 'Aptos','Segoe UI',system-ui,sans-serif; transition: background .2s ease, border-color .2s ease;
     }
-    .to-chip small {
-      display: block; max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      font-family: 'Aptos','Segoe UI',system-ui,sans-serif; font-weight: 600; font-size: 11px; color: var(--muted);
+    .to-av {
+      position: relative; flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+      font: 800 15px/1 'Raleway', sans-serif;
     }
+    .to-av .to-dot { position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid #fff; background: var(--green); }
+    .to-chip.is-off .to-dot { background: #B6BFCC; }
+    .to-chip.is-off .to-name { color: var(--muted); }
+    .to-txt { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+    .to-name { font-weight: 800; font-size: 14px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .to-role { font-size: 12px; color: var(--muted); line-height: 1.2; white-space: nowrap; }
     .to-chip:hover { border-color: var(--blue); }
-    .to-chip[aria-checked="true"] { background: var(--blue-strong); border-color: var(--blue-strong); color: #fff; }
-    .to-chip[aria-checked="true"] small { color: rgba(255,255,255,.88); }
+    .to-chip[aria-checked="true"] { background: var(--blue-tint); border-color: var(--blue-strong); box-shadow: inset 0 0 0 1px var(--blue-strong); }
+    .to-chip[aria-checked="true"] .to-name { color: var(--navy); }
+    .to-chip[aria-checked="true"]::after {
+      content: '✓'; position: absolute; top: 5px; right: 8px; font-size: 12px; font-weight: 800; color: var(--blue-strong);
+    }
     .to-chip .unread {
-      position: absolute; top: -4px; right: -2px; min-width: 18px; height: 18px; padding: 0 5px;
+      position: absolute; top: -6px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px;
       border-radius: 999px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 800;
       display: flex; align-items: center; justify-content: center; font-family: 'Raleway', sans-serif;
+    }
+    .to-now { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-size: 14px; color: var(--ink); }
+    .to-now strong { font-weight: 800; }
+    .to-now-status { font-size: 12.5px; color: var(--muted); }
+    .to-now-status.off { color: var(--warn); }
+    @media (max-width: 560px) {
+      .to-chips { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+      .to-chip { min-height: 50px; padding: 6px 8px 6px 7px; gap: 8px; }
+      .to-av { width: 30px; height: 30px; font-size: 14px; }
     }
     .send-row { display: flex; gap: 8px; align-items: stretch; }
     .send-row input { flex: 1; }
@@ -325,14 +363,19 @@
     .mon-grid { display: grid; grid-template-columns: 1fr; gap: 0; }
     .mon-feed { height: 56vh; max-height: 560px; min-height: 260px; gap: 6px; }
     .mon-row {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
-      padding: 8px 10px; font-size: 14px; border-radius: 8px; background: #fff; border: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px;
+      background: #fff; border: 1px solid var(--border);
     }
-    .mon-time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-    .mon-flow { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .mon-arr  { color: var(--muted); }
-    .mon-from-name { font-weight: 700; font-size: 13px; }
-    .mon-text { flex-basis: 100%; overflow-wrap: anywhere; }
+    .mon-head { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
+    .mon-pill { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
+    .mon-av { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 800 12px/1 'Raleway', sans-serif; }
+    .mon-name { font-weight: 800; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+    .mon-pill .rbadge { font-size: 11px; padding: 1px 7px; }
+    .mon-arr { color: var(--muted); font-size: 16px; line-height: 1; }
+    .mon-time { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .mon-text { overflow-wrap: anywhere; font-size: 15px; line-height: 1.45; padding-left: 2px; }
+    .mon-row[hidden] { display: none; }
+    .mon-feed { gap: 8px; }
 
     /* ── Cronômetro ── */
     .timer-big {
@@ -984,16 +1027,20 @@
         </div>
 
         <section class="card" id="parChatCard" aria-labelledby="chatTitle">
-          <h2 class="card-title" id="chatTitle">Conversa</h2>
+          <div class="chat-head">
+            <h2 class="card-title" id="chatTitle">Conversa</h2>
+            <select id="chatFilter" class="chat-filter" aria-label="Mostrar mensagens de" onchange="applyChatFilter()" hidden></select>
+          </div>
           <div class="chat-area" id="parChat" role="log" aria-live="polite" aria-relevant="additions">
-            <div class="chat-empty" id="parChatEmpty">Nenhuma mensagem ainda. Escolha com quem falar e envie a primeira.</div>
+            <div class="chat-empty" id="parChatEmpty">Nenhuma mensagem ainda. Escolha uma pessoa abaixo e envie a primeira.</div>
           </div>
           <div class="chat-compose" id="chatSendRow">
-            <div class="to-row">
-              <span class="to-label" id="toLabel">Para</span>
+            <div>
+              <span class="to-label" id="toLabel">Para quem você quer falar?</span>
               <div class="to-chips" id="chatToChips" role="radiogroup" aria-labelledby="toLabel"></div>
             </div>
             <select id="chatToSel" hidden aria-hidden="true"></select>
+            <div class="to-now" id="toNow" aria-live="polite"></div>
             <form class="send-row" onsubmit="sendMsg(); return false;">
               <label class="sr-only" for="chatInp">Mensagem</label>
               <input type="text" id="chatInp" class="chat-inp" placeholder="Digite sua mensagem..." maxlength="300" autocomplete="off" enterkeyhint="send">
@@ -1429,7 +1476,7 @@ async function facPollOnce() {
         c.msgs.push(msg);
         if (activePlane === p.code) {
           const mon = document.getElementById(`fac-mon-${p.code}`);
-          if (mon) appendFacMsgTo(mon, msg);
+          if (mon) appendFacMsgTo(mon, msg, c.parts);
         }
       });
     });
@@ -1891,8 +1938,16 @@ function renderActivePlane() {
   }
 
   // Mensagens
+  const peopleOpts = Object.values(cache.parts || {}).filter(p => p && p.role)
+    .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role))
+    .map(p => `<option value="${esc(p.role)}"${facFilterVal[code] === p.role ? ' selected' : ''}>${esc(p.name || '?')} · ${esc(ROLE_LABEL[p.role] || p.role)}</option>`).join('');
   const msgCard = `<section class="card">
-    <h2 class="card-title">Mensagens <span class="count" data-msgs>${cache.msgs.length}</span></h2>
+    <div class="chat-head">
+      <h2 class="card-title">Mensagens <span class="count" data-msgs>${cache.msgs.length}</span></h2>
+      <select id="facMonFilter" class="chat-filter" aria-label="Filtrar mensagens por pessoa" onchange="applyFacFilter()"${peopleOpts ? '' : ' hidden'}>
+        <option value="all">Todas as pessoas</option>${peopleOpts}
+      </select>
+    </div>
     <div class="chat-area mon-feed" id="fac-mon-${code}" role="log" aria-live="polite">
       <div class="chat-empty">Nenhuma mensagem ainda.</div>
     </div>
@@ -1909,22 +1964,51 @@ function renderActivePlane() {
   const mon = document.getElementById(`fac-mon-${activePlane}`);
   if (mon && cache.msgs.length > 0) {
     mon.innerHTML = '';
-    cache.msgs.forEach(msg => appendFacMsgTo(mon, msg));
+    cache.msgs.forEach(msg => appendFacMsgTo(mon, msg, cache.parts));
   }
 }
 
-function appendFacMsgTo(el, msg) {
+function monPill(name, role) {
+  const n = name || '?';
+  return `<span class="mon-pill"><span class="mon-av rbadge-${esc(role)}" aria-hidden="true">${esc((n.trim().charAt(0) || '?').toUpperCase())}</span>` +
+         `<span class="mon-name" title="${esc(n)}">${esc(n)}</span>${roleBadge(role)}</span>`;
+}
+function appendFacMsgTo(el, msg, parts) {
   const emp = el.querySelector('.chat-empty');
   if (emp) emp.remove();
   const ts = new Date(msg.ts||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const list = Object.values(parts || {});
+  const toP = list.find(p => p && p.role === msg.toRole);
+  const fromP = list.find(p => p && p.role === msg.fromRole);
   const row = document.createElement('div');
   row.className = 'mon-row';
+  row.dataset.from = msg.fromRole; row.dataset.to = msg.toRole;
   row.innerHTML = `
-    <span class="mon-time">${ts}</span>
-    <span class="mon-flow">${roleBadge(msg.fromRole)}<span class="mon-from-name">${esc(msg.fromName || '?')}</span><span class="mon-arr" aria-label="para">→</span>${roleBadge(msg.toRole)}</span>
-    <span class="mon-text">${esc(msg.text)}</span>`;
+    <div class="mon-head">${monPill(msg.fromName || (fromP && fromP.name), msg.fromRole)}<span class="mon-arr" aria-label="para">→</span>${monPill(toP && toP.name, msg.toRole)}<span class="mon-time">${ts}</span></div>
+    <div class="mon-text">${esc(msg.text)}</div>`;
+  const f = document.getElementById('facMonFilter');
+  if (f && f.value !== 'all') row.hidden = !(msg.fromRole === f.value || msg.toRole === f.value);
   el.appendChild(row);
   el.scrollTop = el.scrollHeight;
+}
+
+// Filtro da facilitação: só as mensagens em que a pessoa escolhida fala ou recebe
+const facFilterVal = {};
+function applyFacFilter() {
+  const f = document.getElementById('facMonFilter'); if (!f) return;
+  facFilterVal[activePlane] = f.value;
+  const feed = document.getElementById(`fac-mon-${activePlane}`); if (!feed) return;
+  let shown = 0;
+  feed.querySelectorAll('.mon-row').forEach(r => {
+    const ok = f.value === 'all' || r.dataset.from === f.value || r.dataset.to === f.value;
+    r.hidden = !ok; if (ok) shown++;
+  });
+  let e = feed.querySelector('.mon-filter-empty');
+  if (f.value !== 'all' && shown === 0) {
+    if (!e) { e = document.createElement('div'); e.className = 'chat-empty mon-filter-empty'; feed.appendChild(e); }
+    e.textContent = 'Nenhuma mensagem com essa pessoa ainda.';
+  } else if (e) e.remove();
+  feed.scrollTop = feed.scrollHeight;
 }
 
 // Relógio da facilitação: roda para todos os aviões, mesmo com outra aba aberta,
@@ -2034,13 +2118,18 @@ let unreadBy = {};        // role → mensagens não lidas daquela pessoa
 let gameTab = 'chat';     // aba visível em telas estreitas
 let tabUnread = 0;
 
+// Identificação por nome: o papel (A, B1…) é só uma etiqueta; a pessoa é sempre mostrada pelo nome.
+function personName(role)   { const u = roleToUid[role]; return u ? (uidToName[u] || '') : ''; }
+function personOnline(role) { const u = roleToUid[role]; const p = u && lastParts[u]; return !!p && p.online !== false; }
+function nameOrRole(role)   { return personName(role) || ROLE_LABEL[role] || role; }
+function initialOf(role)    { const n = personName(role) || ''; return (n.trim().charAt(0) || role.charAt(0)).toUpperCase(); }
+
 function buildToSelect() {
   const targets = getTargets(myPRole, allRoles);
   const sel = document.getElementById('chatToSel');
   const opts = targets.map(r => {
-    const uid  = roleToUid[r];
-    const name = uid ? uidToName[uid] : '';
-    return { r, name, lbl: name ? `${ROLE_LABEL[r]||r} · ${name}` : (ROLE_LABEL[r]||r) };
+    const name = personName(r);
+    return { r, name, on: personOnline(r), lbl: name ? `${name} · ${ROLE_LABEL[r]||r}` : (ROLE_LABEL[r]||r) };
   });
   const sig = JSON.stringify(opts);
   if (sel.dataset.sig === sig) return;           // nada mudou: não mexe nos campos
@@ -2049,18 +2138,34 @@ function buildToSelect() {
   sel.dataset.sig = sig;
   if (keep && targets.includes(keep)) sel.value = keep;
   renderToChips(opts);
+  updateToNow();
+  refreshChatFilter();
 }
 
 function renderToChips(opts) {
   const sel = document.getElementById('chatToSel');
   document.getElementById('chatToChips').innerHTML = (opts || []).map(o => {
     const n = unreadBy[o.r] || 0;
-    return `<button type="button" class="to-chip" role="radio" data-role="${esc(o.r)}"
-        aria-checked="${o.r === sel.value}" aria-label="${esc(o.lbl)}" onclick="pickTo('${esc(o.r)}')">
-      ${esc(o.r)}${o.name ? `<small>${esc(o.name)}</small>` : ''}
+    const label = `${o.name || ROLE_LABEL[o.r] || o.r}, ${ROLE_LABEL[o.r] || o.r}, ${o.on ? 'online' : 'offline'}`;
+    return `<button type="button" class="to-chip${o.on ? '' : ' is-off'}" role="radio" data-role="${esc(o.r)}"
+        aria-checked="${o.r === sel.value}" aria-label="${esc(label)}" onclick="pickTo('${esc(o.r)}')">
+      <span class="to-av rbadge-${esc(o.r)}" aria-hidden="true">${esc(initialOf(o.r))}<span class="to-dot"></span></span>
+      <span class="to-txt"><span class="to-name">${esc(o.name || ROLE_LABEL[o.r] || o.r)}</span><span class="to-role">${esc(ROLE_LABEL[o.r] || o.r)}</span></span>
       <span class="unread" ${n ? '' : 'hidden'}>${n}</span>
     </button>`;
   }).join('');
+}
+
+// "Enviando para Carla · Pessoa B1 · online", no lugar certo para quem está prestes a enviar
+function updateToNow() {
+  const role = document.getElementById('chatToSel').value;
+  const box = document.getElementById('toNow'), inp = document.getElementById('chatInp');
+  if (!box) return;
+  if (!role) { box.innerHTML = ''; inp.placeholder = 'Digite sua mensagem...'; return; }
+  const name = personName(role), on = personOnline(role);
+  box.innerHTML = `<span>Enviando para</span><strong>${esc(nameOrRole(role))}</strong>${roleBadge(role)}` +
+    `<span class="to-now-status${on ? '' : ' off'}">${on ? 'online agora' : 'offline, vai ver a mensagem quando voltar'}</span>`;
+  inp.placeholder = `Mensagem para ${name || ROLE_LABEL[role] || role}...`;
 }
 
 function pickTo(role) {
@@ -2072,7 +2177,43 @@ function pickTo(role) {
     b.setAttribute('aria-checked', String(on));
     const u = b.querySelector('.unread'); if (u && on) u.hidden = true;
   });
+  updateToNow();
+  const f = document.getElementById('chatFilter');          // quem filtra uma conversa continua vendo a pessoa que escolheu
+  if (f && f.value !== 'all' && [...f.options].some(o => o.value === role)) { f.value = role; applyChatFilter(); }
   document.getElementById('chatInp').focus();
+}
+
+// "Responder" na mensagem recebida: escolhe a pessoa e já deixa o cursor no campo
+function replyTo(role) {
+  if (!getTargets(myPRole, allRoles).includes(role)) { toast('Você não pode escrever para essa pessoa.'); return; }
+  pickTo(role);
+}
+
+// Filtro por pessoa no topo da conversa
+function refreshChatFilter() {
+  const f = document.getElementById('chatFilter'); if (!f) return;
+  const peers = [];
+  chatMsgs.forEach(m => { const p = m.fromRole === myPRole ? m.toRole : m.fromRole; if (!peers.includes(p)) peers.push(p); });
+  peers.sort((a, b) => ROLE_ORDER.indexOf(a) - ROLE_ORDER.indexOf(b));
+  f.hidden = peers.length < 2;
+  const keep = f.value || 'all';
+  f.innerHTML = `<option value="all">Todas as conversas</option>` +
+    peers.map(r => `<option value="${esc(r)}">${esc(nameOrRole(r))} · ${esc(ROLE_LABEL[r] || r)}</option>`).join('');
+  f.value = peers.includes(keep) ? keep : 'all';
+  applyChatFilter();
+}
+function applyChatFilter() {
+  const f = document.getElementById('chatFilter'), chat = document.getElementById('parChat');
+  if (!f || !chat) return;
+  const v = f.hidden ? 'all' : f.value;
+  let shown = 0;
+  chat.querySelectorAll('.bubble').forEach(b => { const ok = v === 'all' || b.dataset.peer === v; b.hidden = !ok; if (ok) shown++; });
+  let e = document.getElementById('parChatFilterEmpty');
+  if (v !== 'all' && shown === 0) {
+    if (!e) { e = document.createElement('div'); e.id = 'parChatFilterEmpty'; e.className = 'chat-filter-empty'; chat.appendChild(e); }
+    e.textContent = `Nenhuma mensagem com ${nameOrRole(v)} ainda.`;
+  } else if (e) e.remove();
+  chat.scrollTop = chat.scrollHeight;
 }
 
 function setGameTab(tab) {
@@ -2184,6 +2325,7 @@ let chatMsgs = [];
 let parPollTimer = null, parPolling = false, parSince = 0, parSig = '';
 function listenRoom() {
   parSince = 0; parSig = ''; msgStore = {}; chatMsgs = [];
+  { const f = document.getElementById('chatFilter'); if (f) { f.value = 'all'; f.hidden = true; } }
   parPollNow();
 }
 function parSchedule() {
@@ -2641,7 +2783,7 @@ function buildRulesHtml(role) {
   if (!role) return '';
   const targets = getTargets(role, allRoles);
   if (targets.length === 0) return 'Aguarde a dinâmica iniciar.';
-  const tNames = targets.map(r => `<strong>${esc(ROLE_LABEL[r]||r)}</strong>`);
+  const tNames = targets.map(r => { const n = personName(r); return n ? `<strong>${esc(n)}</strong> (${esc(r)})` : `<strong>${esc(ROLE_LABEL[r]||r)}</strong>`; });
   const list = tNames.length > 1
     ? tNames.slice(0, -1).join(', ') + ' e ' + tNames[tNames.length - 1]
     : tNames[0];
@@ -2678,11 +2820,22 @@ function startTimer(endTs, dispId, lblId, cardId) {
 function bubbleEl(msg) {
   const ts    = new Date(msg.ts||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   const isOut = msg.fromRole === myPRole;
-  const from  = isOut ? 'Você' : (ROLE_LABEL[msg.fromRole] || msg.fromRole);
-  const to    = isOut ? (ROLE_LABEL[msg.toRole]||msg.toRole) : 'Você';
+  const peer  = isOut ? msg.toRole : msg.fromRole;
+  const peerName = (isOut ? '' : msg.fromName) || personName(peer) || ROLE_LABEL[peer] || peer;
+  const initial  = (peerName.trim().charAt(0) || peer.charAt(0)).toUpperCase();
+  const canReply = !isOut && lastState.phase === 'playing' && getTargets(myPRole, allRoles).includes(peer);
   const b = document.createElement('div');
   b.className = `bubble ${isOut ? 'bubble-out' : 'bubble-in'}`;
-  b.innerHTML = `<div class="bubble-meta">${esc(from)} → ${esc(to)} · ${ts}</div>${esc(msg.text)}`;
+  b.dataset.peer = peer;
+  b.innerHTML = `<div class="bubble-head">` +
+      (isOut
+        ? `<span class="bubble-dir">Você para</span><span class="bubble-who">${esc(peerName)}</span><span class="bubble-role">${esc(ROLE_LABEL[peer]||peer)}</span>`
+        : `<span class="bubble-av rbadge-${esc(peer)}" aria-hidden="true">${esc(initial)}</span><span class="bubble-who">${esc(peerName)}</span><span class="rbadge rbadge-${esc(peer)} bubble-role">${esc(ROLE_LABEL[peer]||peer)}</span>`) +
+      `</div>` +
+    `<div class="bubble-text">${esc(msg.text)}</div>` +
+    `<div class="bubble-foot">` +
+      (canReply ? `<button type="button" class="bubble-reply" onclick="replyTo('${esc(peer)}')" aria-label="Responder para ${esc(peerName)}">Responder</button>` : '') +
+      `<span class="bubble-time">${ts}</span></div>`;
   return b;
 }
 
@@ -2702,6 +2855,7 @@ function addChatMsg(msg) {
     chatMsgs.forEach(m => chat.appendChild(bubbleEl(m)));
   }
   chat.scrollTop = chat.scrollHeight;
+  refreshChatFilter();
 
   const incoming = msg.fromRole !== myPRole;
   if (incoming && now() - (msg.ts||0) < 10000) {
@@ -2712,7 +2866,7 @@ function addChatMsg(msg) {
       unreadBy[msg.fromRole] = (unreadBy[msg.fromRole] || 0) + 1;
       const u = document.querySelector(`#chatToChips [data-role="${msg.fromRole}"] .unread`);
       if (u) { u.textContent = unreadBy[msg.fromRole]; u.hidden = false; }
-      toast(`Nova mensagem de ${ROLE_LABEL[msg.fromRole] || msg.fromRole}`);
+      toast(`Nova mensagem de ${msg.fromName || nameOrRole(msg.fromRole)} (${ROLE_LABEL[msg.fromRole] || msg.fromRole})`);
     }
     if (document.hidden) document.title = '(nova mensagem) ' + BASE_TITLE;
   }
