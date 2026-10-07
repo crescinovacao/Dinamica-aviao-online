@@ -22,7 +22,7 @@
       --blue-tint:   #EAF4FF;
       --bg:          #F5F7FA;
       --card:        #FFFFFF;
-      --muted:       #5B6472;
+      --muted:       #4B5565;
       --border:      #DDE3EC;
       --border-strong: #C3CCD9;
       --green:       #15803D;
@@ -40,6 +40,11 @@
       font-family: 'Aptos','Segoe UI',system-ui,-apple-system,Arial,sans-serif;
       background: var(--bg); color: var(--ink);
       min-height: 100vh; font-size: 15px; line-height: 1.55;
+    }
+    /* Fundo: céu desfocado (fundo-ceu.jpg) com véu claro para manter o texto legível */
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background: linear-gradient(rgb(245 247 250 / 55%), rgb(245 247 250 / 76%)), url('fundo-ceu.jpg') center / cover no-repeat;
     }
     h1, h2, h3 { font-family: 'Raleway', sans-serif; font-weight: 800; color: var(--ink); line-height: 1.2; }
     button { font-family: inherit; }
