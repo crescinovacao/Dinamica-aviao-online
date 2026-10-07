@@ -206,6 +206,7 @@
     .chip::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .8; }
     .chip-playing { background: var(--green-tint); color: var(--green); }
     .chip-ended   { background: var(--warn-tint);  color: var(--warn); }
+    .chip-paused  { background: var(--warn-tint);  color: var(--warn); }
     .chip-ok      { background: var(--green-tint); color: var(--green); }
     .chip-err     { background: var(--danger-tint); color: var(--danger); }
     .chip-info    { background: var(--blue-tint); color: var(--blue-strong); }
@@ -570,6 +571,33 @@
     .cb-offline { opacity: .45; }
     .cb-offline .cb-presence { background: var(--cabin-border-default); }
     /* escolha de assento (sala de espera) */
+
+    /* Pausa: a facilitação congela o avião; quem joga vê um aviso sobre a tela desfocada */
+    .timer-big.paused { color: var(--warn); }
+    .pause-note { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+    .pause-overlay {
+      position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center;
+      padding: 24px; background: rgb(245 247 250 / 38%);
+      -webkit-backdrop-filter: blur(12px) saturate(.9); backdrop-filter: blur(12px) saturate(.9);
+      animation: pauseIn .25s ease;
+    }
+    .pause-overlay[hidden] { display: none; }
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .pause-overlay { background: rgb(245 247 250 / 94%); }
+    }
+    .pause-card {
+      background: #fff; border: 1px solid var(--line); border-radius: 16px; max-width: 380px; width: 100%;
+      padding: 28px 24px; text-align: center; box-shadow: 0 12px 40px rgb(16 24 40 / 18%);
+    }
+    .pause-card:focus { outline: none; }
+    .pause-icon {
+      width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center;
+      gap: 6px; background: var(--warn-tint);
+    }
+    .pause-icon i { display: block; width: 7px; height: 22px; border-radius: 2px; background: var(--warn); }
+    .pause-card h2 { margin: 0 0 8px; font-size: 22px; color: var(--blue-strong); }
+    .pause-card p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.5; }
+    @keyframes pauseIn { from { opacity: 0; } to { opacity: 1; } }
     .cb-pick { cursor: pointer; }
     /* Avião na tela da facilitação (somente leitura; no monitor, tocar num assento filtra as mensagens da pessoa) */
     .fac-cabin { margin: 14px 0 4px; }
@@ -667,6 +695,7 @@
     .sdot-lobby   { background: #B6BFCC; }
     .sdot-playing { background: var(--green); }
     .sdot-ended   { background: var(--warn); }
+    .sdot-paused  { background: var(--warn); box-shadow: 0 0 0 2px var(--warn-tint); }
 
     /* ═══════════════════════════
        LOBBY E VISÃO GERAL (facilitação)
@@ -766,6 +795,13 @@
 <body>
 
 <div id="toast" role="status" aria-live="polite"></div>
+<div id="pauseOverlay" class="pause-overlay" hidden role="alertdialog" aria-modal="true" aria-labelledby="pauseTitle" aria-describedby="pauseText">
+  <div class="pause-card" tabindex="-1" id="pauseCard">
+    <div class="pause-icon" aria-hidden="true"><i></i><i></i></div>
+    <h2 id="pauseTitle">Dinâmica pausada</h2>
+    <p id="pauseText">A pessoa facilitadora pausou a dinâmica. Aguarde: esta tela volta sozinha quando ela liberar.</p>
+  </div>
+</div>
 <div id="connBanner" class="conn-banner" role="status" hidden>Sem conexão. Tentando reconectar...</div>
 <noscript><p style="padding:16px;text-align:center">Esta dinâmica precisa de JavaScript ativado no navegador.</p></noscript>
 
@@ -1803,7 +1839,7 @@ function renderFacTabs() {
   document.getElementById('facTabBar').innerHTML = [
     `<button class="tab-btn ${activePlane===null?'active':''}" role="tab" aria-selected="${activePlane===null}" onclick="setActivePlane(null)">Visão geral</button>`,
     ...planeList.map((p, i) => {
-      const st = planeCache[p.code]?.state?.phase || 'lobby';
+      const st = phaseKey(planeCache[p.code]?.state);
       const on = activePlane === p.code;
       return `<button class="tab-btn ${on?'active':''}" role="tab" aria-selected="${on}" onclick="setActivePlane('${esc(p.code)}')">
         Avião ${i+1}<span class="sdot sdot-${st}" aria-hidden="true"></span>
@@ -1819,6 +1855,9 @@ function setActivePlane(code) {
 }
 
 const PHASE_LABEL = { lobby:'Aguardando início', playing:'Em andamento', ended:'Encerrado' };
+// Estado exibido: em pausa, o avião segue "playing" no servidor, mas a facilitação vê "Pausado"
+function phaseKey(st) { return st && st.phase === 'playing' && st.paused ? 'paused' : (st && st.phase) || 'lobby'; }
+function phaseText(st) { return phaseKey(st) === 'paused' ? 'Pausado' : PHASE_LABEL[(st && st.phase) || 'lobby']; }
 
 // ─────────────────────────────────────────── RENDER ACTIVE PLANE
 
@@ -1851,9 +1890,10 @@ function renderActivePlane() {
       const cache  = planeCache[p.code] || {};
       const count  = Object.keys(cache.parts || {}).length;
       const ansSym = cache.state?.answer ? SYM[cache.state.answer] : null;
-      const chipCls = st === 'playing' ? 'chip-playing' : 'chip-ended';
+      const paused = st === 'playing' && cache.state?.paused;
+      const chipCls = paused ? 'chip-paused' : st === 'playing' ? 'chip-playing' : 'chip-ended';
       return `<button class="overview-card" onclick="setActivePlane('${esc(p.code)}')">
-        <div class="overview-card-top"><span class="overview-card-title">Avião ${i+1}</span><span class="chip ${chipCls}">${PHASE_LABEL[st]}</span></div>
+        <div class="overview-card-top"><span class="overview-card-title">Avião ${i+1}</span><span class="chip ${chipCls}">${paused ? 'Pausado' : PHASE_LABEL[st]}</span></div>
         <div class="overview-card-meta">${count} de ${p.numParticipants} pessoas</div>
         ${ansSym ? `<div class="overview-answer"><span class="glyph" aria-hidden="true">${esc(ansSym.ch)}</span>
           <span class="chip ${cache.state.correct ? 'chip-ok' : 'chip-err'}">${cache.state.correct ? 'Resposta correta' : 'Resposta incorreta'}</span></div>` : ''}
@@ -1879,8 +1919,13 @@ function renderActivePlane() {
 
   // Estado e controles (no alto, sempre à vista)
   let controls;
+  const paused = phase === 'playing' && !!state.paused;
   if (phase === 'playing') {
-    controls = endConfirm[activePlane]
+    const pauseBtn = paused
+      ? `<p class="pause-note">Quem está jogando vê um aviso na tela e não consegue enviar mensagens. O tempo está parado.</p>
+         <button class="btn btn-primary btn-full" style="margin-bottom:10px" onclick="pausePlane('${code}', false)">Retomar dinâmica</button>`
+      : `<button class="btn btn-outline btn-full" style="margin-bottom:10px" onclick="pausePlane('${code}', true)">Pausar dinâmica</button>`;
+    controls = pauseBtn + (endConfirm[activePlane]
       ? `<div class="confirm-box">
            <p><strong>Encerrar este avião agora?</strong> O grupo não verá o resultado até você revelar.</p>
            <div class="row-btns">
@@ -1888,7 +1933,7 @@ function renderActivePlane() {
              <button class="btn btn-outline" onclick="askEnd('${code}', false)">Cancelar</button>
            </div>
          </div>`
-      : `<button class="btn btn-danger btn-full" onclick="askEnd('${code}', true)">Encerrar avião</button>`;
+      : `<button class="btn btn-danger btn-full" onclick="askEnd('${code}', true)">Encerrar avião</button>`);
   } else if (!state.revealed) {
     controls = `<p class="status-note">O avião está encerrado e o grupo ainda não vê o resultado. Libere quando terminar o debriefing.</p>
       <button class="btn btn-primary btn-full" onclick="facRevealPlane('${code}')">Revelar resultado ao grupo</button>`;
@@ -1908,7 +1953,7 @@ function renderActivePlane() {
   }
   const statusCard = `<section class="card status-card">
     <div class="status-top">
-      <span class="chip ${phase === 'playing' ? 'chip-playing' : 'chip-ended'}">${PHASE_LABEL[phase]}</span>
+      <span class="chip ${paused ? 'chip-paused' : phase === 'playing' ? 'chip-playing' : 'chip-ended'}">${phaseText(state)}</span>
       ${phase === 'playing' && state.timerEnd ? `<div id="fac-timer-${code}" class="timer-big timer-md" aria-label="Tempo restante">--:--</div>` : ''}
     </div>
     ${controls}
@@ -2049,6 +2094,13 @@ function facClockTick() {
   planeList.forEach((p, i) => {
     const st = planeCache[p.code]?.state || {};
     if (st.phase !== 'playing' || !st.timerEnd) return;
+    if (st.paused) {   // relógio parado: mostra o que faltava no instante da pausa e não dispara avisos
+      const remP = st.timerEnd - (st.pausedAt || now());
+      const elP = document.getElementById(`fac-timer-${p.code}`);
+      if (elP) { elP.textContent = fmtTime(remP); elP.className = 'timer-big timer-md paused'; }
+      planePrevRem[p.code] = remP;
+      return;
+    }
     const rem = st.timerEnd - now();
     const el = document.getElementById(`fac-timer-${p.code}`);
     if (el) {
@@ -2083,6 +2135,19 @@ function askEnd(code, on) {
   endConfirm[code] = !!on;
   renderActivePlane();
 }
+let pauseBusy = false;
+async function pausePlane(code, paused) {
+  if (pauseBusy) return; pauseBusy = true;
+  try {
+    await rpc('av_pause', { p_token: facToken(), p_code: code, p_paused: !!paused });
+    await facPollNow();
+    toast(paused ? 'Dinâmica pausada. A tela de quem joga foi congelada.' : 'Dinâmica retomada.');
+  } catch(e) {
+    toast(e.code === 'bad_phase' ? 'Só dá para pausar enquanto a dinâmica está em andamento.' : connErr(e));
+    facPollNow();
+  } finally { pauseBusy = false; }
+}
+
 async function endPlane(code) {
   endConfirm[code] = false;
   try { await rpc('av_end', { p_token: facToken(), p_code: code }); await facPollNow(); }
@@ -2281,6 +2346,7 @@ async function sendMsg() {
     const msgs = {
       not_allowed:  'Mensagem recusada pelas regras do avião.',
       not_playing:  'A dinâmica não está em andamento.',
+      paused:       'A dinâmica está pausada. Aguarde a pessoa facilitadora liberar.',
       rate_limited: 'Devagar: muitas mensagens em poucos segundos.',
       bad_text:     'A mensagem deve ter entre 1 e 500 caracteres.',
       limit:        'Limite de mensagens desta sala atingido.',
@@ -2336,6 +2402,7 @@ async function confirmAnswer() {
     closeAnswerPanel();
   } catch(e) {
     const refused = e && (e.code === 'not_playing' || e.code === 'not_allowed');
+    if (e && e.code === 'paused') { toast('A dinâmica está pausada. Aguarde a pessoa facilitadora liberar.'); return; }
     toast(refused ? 'A resposta já foi enviada ou a dinâmica foi encerrada.' : connErr(e));
     closeAnswerPanel();
   } finally {
@@ -2355,6 +2422,7 @@ let chatMsgs = [];
 let parPollTimer = null, parPolling = false, parSince = 0, parSig = '';
 function listenRoom() {
   parSince = 0; parSig = ''; msgStore = {}; chatMsgs = [];
+  parWasPaused = false; { const ov = document.getElementById('pauseOverlay'); if (ov) ov.hidden = true; const g = document.getElementById('s-par-game'); if (g) g.removeAttribute('inert'); }
   { const f = document.getElementById('chatFilter'); if (f) { f.value = 'all'; f.hidden = true; } }
   parPollNow();
 }
@@ -2436,6 +2504,21 @@ function applyPar(r) {
 
 // ─────────────────────────────────────────── PAR HANDLER
 
+let parWasPaused = false;
+function applyPause(on) {
+  const ov = document.getElementById('pauseOverlay');
+  const app = document.getElementById('s-par-game');
+  if (on === parWasPaused && ov.hidden === !on) return;
+  ov.hidden = !on;
+  if (app) { if (on) app.setAttribute('inert', ''); else app.removeAttribute('inert'); }
+  if (on) {
+    const c = document.getElementById('pauseCard'); if (c) c.focus({ preventScroll: true });
+  } else if (parWasPaused) {
+    toast('Dinâmica retomada. Pode continuar.');
+  }
+  parWasPaused = on;
+}
+
 function handlePar(state, parts) {
   const phase = state.phase || 'lobby';
   const me    = parts[myUid] || {};
@@ -2487,9 +2570,18 @@ function handlePar(state, parts) {
   // Destinatários da conversa
   buildToSelect();
 
+  // Pausa: aviso com blur por cima da tela; o fundo fica inerte (sem foco nem digitação)
+  applyPause(phase === 'playing' && !!state.paused);
+
   // Cronômetro
   const tCard = document.getElementById('parTimerCard');
-  if (phase === 'playing') {
+  if (phase === 'playing' && state.paused && state.timerEnd) {
+    clearInterval(timerIntvl); timerIntvl = null; timerEndShown = null;
+    tCard.style.display = 'block';
+    const d = document.getElementById('parTimerDisp');
+    d.textContent = fmtTime(state.timerEnd - (state.pausedAt || now())); d.className = 'timer-big paused';
+    const l = document.getElementById('parTimerLbl'); if (l) l.textContent = 'Pausado';
+  } else if (phase === 'playing') {
     startTimer(state.timerEnd, 'parTimerDisp', 'parTimerLbl', 'parTimerCard');
   } else {
     clearInterval(timerIntvl); timerIntvl = null; timerEndShown = null;
