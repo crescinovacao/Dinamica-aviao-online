@@ -1085,6 +1085,7 @@
 <!-- FAC LOBBY -->
 <div id="s-fac-lobby" class="screen">
   <header class="top-header">
+    <button class="hback" type="button" onclick="leaveFacSession()" aria-label="Sair da sessão e voltar ao início"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l-6 6 6 6"/></svg>Início</button>
     <div class="brand"><span class="wordmark">crescimentum</span><span class="brand-sep"></span><span class="title">Sala de espera</span></div>
     <div class="hright"><span class="hbadge" id="lobbySessionBadge">Sessão</span></div>
   </header>
@@ -1104,6 +1105,7 @@
 <!-- FAC GAME -->
 <div id="s-fac-game" class="screen">
   <header class="top-header">
+    <button class="hback" type="button" onclick="leaveFacSession()" aria-label="Sair da sessão e voltar ao início"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l-6 6 6 6"/></svg>Início</button>
     <div class="brand"><span class="wordmark">crescimentum</span><span class="brand-sep"></span><span class="title">Monitor da sessão</span></div>
     <div class="hright"><span class="hbadge" id="facGameBadge">Sessão</span></div>
   </header>
@@ -1496,6 +1498,18 @@ function goFac() {
   showScreen('s-fac-setup');
 }
 function backHome() { showScreen('s-home'); refreshHome(); }
+// Sai do monitor sem encerrar nada: a sessão continua no servidor e volta por "Retomar sessão"
+function leaveFacSession() {
+  const playing = planeList.some(p => planeCache[p.code]?.state?.phase === 'playing');
+  if (playing && !confirm('Há avião em andamento. Ele continua rodando e você pode voltar por "Retomar sessão". Sair do monitor agora?')) return;
+  clearTimeout(facPollTimer); facPollTimer = null;
+  if (facClock) { clearInterval(facClock); facClock = null; }
+  const code = sessionCode;
+  sessionCode = null; activePlane = null; planeList = []; facSince = {}; facSig = '';
+  clearAv();
+  backHome();
+  if (code) toast(`Você saiu da sessão ${code}. Use “Retomar sessão” para voltar.`, 5000);
+}
 async function recoverSession() {
   const code = document.getElementById('recCodeInp').value.trim().toUpperCase();
   if (!/^[A-Z0-9]{4}$/.test(code)) { showErr('recErr', 'O código tem 4 caracteres.'); return; }
@@ -3279,9 +3293,17 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) docu
 
 // ─────────────────────────────────────────── SESSION RESUME
 
-async function loadFacSession(sCode) {
+async function loadFacSession(sCode, opts = {}) {
   try {
     const r = await rpc('av_fac_load', { p_token: facToken(), p_session: sCode });
+    // Ao recarregar a página: se todos os aviões já terminaram, não há o que acompanhar, então fica no início
+    if (opts.skipIfEnded && (r.planes || []).length) {
+      try {
+        const q = await rpc('av_fac_poll', { p_token: facToken(), p_session: r.sessionCode, p_since: {} });
+        const all = (r.planes || []).every(p => q.planes && q.planes[p.code]?.state?.phase === 'ended');
+        if (all) { try { localStorage.setItem('av_fac_session', r.sessionCode); } catch(e) {} return 'ended'; }
+      } catch(e) { /* sem resposta: segue o fluxo normal */ }
+    }
     sessionCode = r.sessionCode;
     myRole = 'fac';
     sessionStorage.setItem('av_session', sessionCode);
@@ -3308,8 +3330,9 @@ async function resumeSession() {
   const role  = sessionStorage.getItem('av_role');
 
   if (role === 'fac' && sCode) {
-    const r = await loadFacSession(sCode);
-    if (r !== 'ok') { clearAv(); }
+    const r = await loadFacSession(sCode, { skipIfEnded: true });
+    if (r === 'ended') { clearAv(); refreshHome(); toast(`A sessão ${sCode} já foi encerrada. Use “Retomar sessão” para rever o resultado.`, 6000); }
+    else if (r !== 'ok') { clearAv(); }
   } else if (role === 'par' && rCode) {
     myName = sessionStorage.getItem('av_name');
     if (!myName) { clearAv(); return; }
