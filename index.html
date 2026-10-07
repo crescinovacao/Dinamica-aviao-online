@@ -2,6 +2,9 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <!-- Defesa em profundidade: o navegador só fala com este site, com o Supabase da dinâmica e com a fonte Raleway -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://taugeysuczntdgwtrcsx.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dinâmica do Avião · Crescimentum</title>
   <meta name="theme-color" content="#210000">
@@ -1124,6 +1127,7 @@
         <label for="nameInp">Seu nome</label>
         <input type="text" id="nameInp" maxlength="30" placeholder="Nome ou apelido" autocomplete="given-name" enterkeyhint="go">
         <p class="field-hint" style="margin:8px 0 0">Seu papel será sorteado quando a pessoa facilitadora iniciar a dinâmica.</p>
+        <p class="field-hint" style="margin:6px 0 0">Seu nome e suas mensagens ficam visíveis para a facilitação e são apagados automaticamente depois de 3 dias.</p>
       </div>
       <!-- código mantido oculto: preenchido via URL -->
       <input type="hidden" id="codeInp">
@@ -1445,7 +1449,7 @@ function rndCode() {
   return Array.from({length:4}, () => ch[Math.floor(Math.random()*ch.length)]).join('');
 }
 function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 function showScreen(id) {
   if (document.getElementById(id).classList.contains('active')) return;
@@ -2323,9 +2327,11 @@ function askEnd(code, on) {
   endConfirm[code] = !!on;
   renderActivePlane();
 }
-let pauseBusy = false;
+let pauseBusy = false, pauseLastAt = 0;
+// Toque duplo no botão não pode pausar e retomar na sequência: o botão muda de lugar logo após o primeiro toque
+function pauseTooSoon() { const t = Date.now(); if (t - pauseLastAt < 900) return true; pauseLastAt = t; return false; }
 async function pausePlane(code, paused) {
-  if (pauseBusy) return; pauseBusy = true;
+  if (pauseBusy || pauseTooSoon()) return; pauseBusy = true;
   try {
     await rpc('av_pause', { p_token: facToken(), p_code: code, p_paused: !!paused });
     await facPollNow();
@@ -2337,7 +2343,7 @@ async function pausePlane(code, paused) {
 }
 
 async function pauseAll(paused) {
-  if (pauseBusy) return; pauseBusy = true;
+  if (pauseBusy || pauseTooSoon()) return; pauseBusy = true;
   try {
     const targets = planeList.filter(p => { const st = planeCache[p.code]?.state; return st && st.phase === 'playing' && !!st.paused !== !!paused; });
     await Promise.all(targets.map(p => rpc('av_pause', { p_token: facToken(), p_code: p.code, p_paused: !!paused })));
